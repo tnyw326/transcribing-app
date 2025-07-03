@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useState, useRef } from "react";
 
 export default function Home() {
@@ -27,7 +26,7 @@ export default function Home() {
     if (videoFile) {
       setSelectedFile(videoFile);
     } else {
-      alert('Please drop a valid video file');
+      alert('Please select a valid video file');
     }
   };
 
@@ -129,7 +128,7 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="Paste YouTube link here"
-                className="w-full max-w-md p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full max-w-md p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" 
               />
             </div>
             <button
