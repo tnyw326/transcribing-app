@@ -66,7 +66,7 @@ export default function Home() {
           onDrop={handleDrop}
         >
           <h2 className="absolute top-4 text-3xl font-bold text-black pt-10">Transcribe a video file</h2>
-          <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full relative h-full">
+          <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full relative h-full pt-20">
             {selectedFile ? (
               <div className="text-center w-full flex flex-col items-center gap-1 relative">
                 <div className="flex items-center justify-center gap-2">
@@ -123,7 +123,7 @@ export default function Home() {
         {/* YouTube Card */}
         <div className="flex flex-col items-center justify-center bg-gray-100 w-full lg:w-1/2 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-gray-300">
           <h2 className="absolute top-4 text-3xl font-bold text-black pt-10">Transcribe a YouTube video</h2>
-          <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full">
+          <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full pt-20">
             <div className="text-center w-full">
               <input
                 type="text"
