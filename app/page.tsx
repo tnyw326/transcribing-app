@@ -66,15 +66,15 @@ export default function Home() {
           onDrop={handleDrop}
         >
           <h2 className="absolute top-4 text-3xl font-bold text-black pt-10">Transcribe a video file</h2>
-          <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full relative h-full pt-20">
+          <div className="flex flex-col items-center justify-center gap-5 mt-20 w-full relative h-full pt-0">
             {selectedFile ? (
               <div className="text-center w-full flex flex-col items-center gap-1 relative">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-green-600 font-semibold">✓ File selected</p>
+                  <p className="text-green-600 font-semibold mt-10 lg:mt-0">✓ File selected</p>
                   <button
                     onClick={handleRemoveFile}
                     aria-label="Remove file"
-                    className="ml-1 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                    className="ml-1 p-1 rounded-full hover:bg-gray-200 transition-colors  mt-10 lg:mt-0"
                     type="button"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-400 hover:text-red-500">
@@ -82,8 +82,10 @@ export default function Home() {
                     </svg>
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 mt-2">{selectedFile.name}</p>
-                <p className="text-xs text-gray-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                <div className="flex flex-row items-center justify-center gap-2">
+                <p className="text-sm text-gray-700 font-semibold mt-2">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500 mt-2">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                </div>
               </div>
             ) : (
               <p className="text-gray-500 text-sm">Drop or upload your video here</p>
@@ -92,7 +94,7 @@ export default function Home() {
               onClick={selectedFile ? undefined : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
-                  ? 'bg-green-500 hover:bg-green-400 mb-20'
+                  ? 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
             >
