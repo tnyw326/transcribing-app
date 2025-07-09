@@ -1,103 +1,147 @@
-import Image from "next/image";
+"use client";
+import { useState, useRef } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const videoFile = files.find(file => file.type.startsWith('video/'));
+
+    if (videoFile) {
+      setSelectedFile(videoFile);
+    } else {
+      alert('Please select a valid video file');
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('video/')) {
+      setSelectedFile(file);
+    } else if (file) {
+      alert('Please select a valid video file');
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleRemoveFile = () => setSelectedFile(null);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-geist-sans)] bg-blue-100 text-center">
+
+      <div className="text-black items-center justify-items-center">
+        <p className="text-5xl font-extrabold ">Convert video to text for free!</p>
+        <p>High accuracy and 200+ languages</p>
+      </div>
+      <div className="text-black flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[500px] h-[800px] gap-0">
+        {/* Video File Card */}
+        <div
+          className={`flex flex-col items-center justify-center bg-gray-100 w-full lg:w-1/2 lg:mr-5 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${isDragOver
+            ? 'border-blue-500 bg-blue-50'
+            : selectedFile
+              ? 'border-green-500 bg-green-50'
+              : 'border-gray-300'
+            }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <h2 className="absolute top-4 text-3xl font-bold text-black pt-10">Transcribe a video file</h2>
+          <div className="flex flex-col items-center justify-center gap-5 mt-20 w-full relative h-full pt-0">
+            {selectedFile ? (
+              <div className="text-center w-full flex flex-col items-center gap-1 relative">
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-green-600 font-semibold mt-10 lg:mt-0">✓ File selected</p>
+                  <button
+                    onClick={handleRemoveFile}
+                    aria-label="Remove file"
+                    className="ml-1 p-1 rounded-full hover:bg-gray-200 transition-colors  mt-10 lg:mt-0"
+                    type="button"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-400 hover:text-red-500">
+                      <path fillRule="evenodd" d="M10 8.586l4.95-4.95a1 1 0 111.414 1.415L11.414 10l4.95 4.95a1 1 0 01-1.414 1.414L10 11.414l-4.95 4.95a1 1 0 01-1.414-1.414L8.586 10l-4.95-4.95A1 1 0 115.05 3.636L10 8.586z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex flex-row items-center justify-center gap-2">
+                <p className="text-sm text-gray-700 font-semibold mt-2">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500 mt-2">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">Drop or upload your video here</p>
+            )}
+            <button
+              onClick={selectedFile ? undefined : handleUploadClick}
+              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
+                selectedFile
+                  ? 'bg-green-500 hover:bg-green-400 mb-40'
+                  : 'bg-blue-500 hover:bg-blue-400'
+              }`}
+            >
+              {selectedFile ? 'Transcribe' : 'Upload'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleFileSelect}
+              className="hidden"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            {!selectedFile && (
+              <p className="text-gray-400 text-xs mt-2">Supported formats: mp4, mov, avi, mkv, etc.</p>
+            )}
+            {/* Video Preview at the bottom */}
+            {selectedFile && (
+              <div className="absolute left-0 right-0 bottom-6 flex justify-center">
+                <video
+                  src={URL.createObjectURL(selectedFile)}
+                  controls
+                  className="rounded-xl shadow-lg max-h-32 w-auto border border-gray-300"
+                />
+              </div>
+            )}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        {/* YouTube Card */}
+        <div className="flex flex-col items-center pt-17 bg-gray-100 w-full lg:w-1/2 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-gray-300">
+          <h2 className="absolute top-4 text-3xl font-bold text-black pt-10">Transcribe a YouTube video</h2>
+          <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full pt-20">
+            <div className="text-center w-full">
+              <input
+                type="text"
+                placeholder="Paste YouTube link here"
+                className="w-full max-w-md p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" 
+              />
+            </div>
+            <button
+              className="text-white bg-blue-500 p-3 rounded-full w-[150px] cursor-pointer hover:bg-blue-400 font-extrabold"
+            >
+              Transcribe
+            </button>
+            <p className="text-gray-400 text-xs mt-2">Paste a YouTube link to transcribe its audio.</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
