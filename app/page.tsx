@@ -52,7 +52,7 @@ export default function Home() {
         <p className="text-5xl font-extrabold ">Convert video to text for free!</p>
         <p>High accuracy and 200+ languages</p>
       </div>
-      <div className="text-black flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[500px] h-[700px] gap-0">
+      <div className="text-black flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[500px] h-[800px] gap-0">
         {/* Video File Card */}
         <div
           className={`flex flex-col items-center justify-center bg-gray-100 w-full lg:w-1/2 lg:mr-5 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${isDragOver
@@ -112,7 +112,7 @@ export default function Home() {
             )}
             {/* Video Preview at the bottom */}
             {selectedFile && (
-              <div className="absolute left-0 right-0 bottom-4 flex justify-center">
+              <div className="absolute left-0 right-0 bottom-6 flex justify-center">
                 <video
                   src={URL.createObjectURL(selectedFile)}
                   controls
@@ -123,7 +123,7 @@ export default function Home() {
           </div>
         </div>
         {/* YouTube Card */}
-        <div className="flex flex-col items-center justify-center bg-gray-100 w-full lg:w-1/2 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-gray-300">
+        <div className="flex flex-col items-center pt-17 bg-gray-100 w-full lg:w-1/2 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-gray-300">
           <h2 className="absolute top-4 text-3xl font-bold text-black pt-10">Transcribe a YouTube video</h2>
           <div className="flex flex-col items-center justify-center gap-5 mt-10 w-full pt-20">
             <div className="text-center w-full">
