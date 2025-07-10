@@ -43,6 +43,25 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
+  async function handleTranscribeClick(selectedFile: File) {
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    const response = await fetch("/api/transcribe", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Server error:", text);
+      return;
+    }
+    
+    const result = await response.json();
+    console.log(result.text);
+    }
+
   const handleRemoveFile = () => setSelectedFile(null);
 
   return (
@@ -91,7 +110,7 @@ export default function Home() {
               <p className="text-gray-500 text-sm">Drop or upload your video here</p>
             )}
             <button
-              onClick={selectedFile ? undefined : handleUploadClick}
+              onClick={selectedFile ? () => handleTranscribeClick(selectedFile) : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
                   ? 'bg-green-500 hover:bg-green-400 mb-40'
