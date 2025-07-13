@@ -1,27 +1,88 @@
 "use client";
 import { useState, useRef } from "react";
 import Link from 'next/link';
+import fs from 'fs';
+import OpenAI from 'openai';
+
+// Translation object for English, Chinese, and Japanese
+  const translations = {
+    en: {
+      title: "Convert Video to Text",
+      subtitle: "High accuracy and 200+ languages",
+      transcribeVideoFile: "Transcribe a video file",
+      dropOrUpload: "Drop or upload your video here",
+      fileSelected: "✓ File selected",
+      upload: "Upload",
+      transcribe: "Transcribe",
+      transcribing: "Transcribing...",
+      supportedFormats: "Supported formats: mp4, mov, avi, mkv, etc.",
+      transcribeYouTube: "Transcribe a YouTube video",
+      pasteYouTubeLink: "Paste YouTube link here",
+      pasteYouTubeDescription: "Paste a YouTube link to transcribe its audio.",
+      pleaseSelectValidVideo: "Please select a valid video file",
+      transcriptionResult: "Transcription Result:",
+      languageSelector: "Please select the language of the input and output video.",
+      inputLanguage: "Input Language",
+      outputLanguage: "Output Language"
+    },
+    zh: {
+      title: "视频转换为文字",
+      subtitle: "高精度，支持200多种语言",
+      transcribeVideoFile: "转录视频文件",
+      dropOrUpload: "拖拽或上传您的视频到这里",
+      fileSelected: "✓ 文件已选择",
+      upload: "上传",
+      transcribe: "转录",
+      transcribing: "转录中...",
+      supportedFormats: "支持格式：mp4, mov, avi, mkv, 等",
+      transcribeYouTube: "转录YouTube视频",
+      pasteYouTubeLink: "粘贴YouTube链接",
+      pasteYouTubeDescription: "粘贴YouTube链接以转录其音频。",
+      pleaseSelectValidVideo: "请选择视频格式",
+      transcriptionResult: "转录结果：",
+      languageSelector: "请选择输入和输出视频的语言。",
+      inputLanguage: "视频语言",
+      outputLanguage: "输出语言"
+    },
+    ja: {
+      title: "動画をテキストに変換",
+      subtitle: "高精度、200以上の言語に対応",
+      transcribeVideoFile: "動画ファイルを文字起こし",
+      dropOrUpload: "ここに動画をドラッグまたはアップロード",
+      fileSelected: "✓ ファイルが選択されました",
+      upload: "アップロード",
+      transcribe: "文字起こし",
+      transcribing: "文字起こし中...",
+      supportedFormats: "対応形式：mp4, mov, avi, mkv, など",
+      transcribeYouTube: "YouTube動画を文字起こし",
+      pasteYouTubeLink: "ここにYouTubeリンクを貼り付けてください",
+      pasteYouTubeDescription: "YouTubeリンクを貼り付けて音声を文字起こしします。",
+      pleaseSelectValidVideo: "有効な動画ファイルを選択してください",
+      transcriptionResult: "文字起こし：",
+      languageSelector: "動画の入力言語と出力言語を選択してください。",
+      inputLanguage: "入力言語",
+      outputLanguage: "出力言語"
+    }
+  };
 
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionResult, setTranscriptionResult] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inputLanguage, setInputLanguage] = useState("en");
+  const [outputLanguage, setOutputLanguage] = useState("en");
+
+  // Get current translations based on selected language
+  const t = translations[selectedLanguage as keyof typeof translations] || translations.en;
 
   const languages = [
     { code: "en", name: "English" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-    { code: "it", name: "Italian" },
-    { code: "pt", name: "Portuguese" },
-    { code: "ru", name: "Russian" },
-    { code: "ja", name: "Japanese" },
-    { code: "ko", name: "Korean" },
-    { code: "zh", name: "Chinese" },
-    { code: "ar", name: "Arabic" },
-    { code: "hi", name: "Hindi" },
+    { code: "zh", name: "中文" },
+    { code: "ja", name: "日本語" },
   ];
 
   const toggleDarkMode = () => {
@@ -48,7 +109,7 @@ export default function Home() {
     if (videoFile) {
       setSelectedFile(videoFile);
     } else {
-      alert('Please select a valid video file');
+      alert(t.pleaseSelectValidVideo);
     }
   };
 
@@ -57,7 +118,7 @@ export default function Home() {
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
     } else if (file) {
-      alert('Please select a valid video file');
+      alert(t.pleaseSelectValidVideo);
     }
   };
 
@@ -65,10 +126,44 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  const handleRemoveFile = () => setSelectedFile(null);
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setTranscriptionResult("");
+  };
+
+  const handleTranscribe = async () => {
+    if (!selectedFile) return;
+
+    setIsTranscribing(true);
+    setTranscriptionResult("");
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('inputLanguage', inputLanguage);
+      formData.append('outputLanguage', outputLanguage);
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Transcription failed');
+      }
+
+      const data = await response.json();
+      setTranscriptionResult(data.transcription);
+    } catch (error) {
+      console.error('Transcription error:', error);
+      alert('Transcription failed. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-lusitana)] ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-blue-100 text-black'} text-center relative transition-colors duration-300`}>
+    <div className={`flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-inter)] ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-blue-100 text-black'} text-center relative transition-colors duration-300`}>
       {/* Language Selector and Dark Mode Toggle - Top Right */}
       <div className="absolute top-8 right-8 z-10 flex items-center gap-4">
         {/* Dark Mode Toggle */}
@@ -118,8 +213,32 @@ export default function Home() {
       </div>
 
       <div className={`items-center justify-items-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
-        <p className="text-5xl font-extrabold">Convert video to text for free!</p>
-        <p className="text-2xl font-normal">High accuracy and 200+ languages</p>
+        {/* Icons above the title */}
+        <div className="flex items-center justify-center gap-4 mb-6">
+          {/* Video icon */}
+          <div className={`p-4 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+            <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+          </div>
+          
+          {/* Arrow icon */}
+          <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </div>
+          
+          {/* Text icon */}
+          <div className={`p-4 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+            <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 2a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 000 2h4a1 1 0 100-2H7z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        
+        <p className="text-5xl font-extrabold">{t.title}</p>
+        <p className="text-2xl font-normal">{t.subtitle}</p>
       </div>
       <div className={`flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[500px] h-[800px] gap-0 ${isDarkMode ? 'text-white' : 'text-black'}`}>
         {/* Video File Card */}
@@ -141,12 +260,48 @@ export default function Home() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <h2 className={`absolute top-4 text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-black'}`}>Transcribe a video file</h2>
-          <div className="flex flex-col items-center justify-center gap-5 mt-20 w-full relative h-full pt-0">
+          <div className="flex flex-col items-center w-full h-full">
+            {/* Title */}
+            <h2 className={`text-3xl font-bold pt-10 mb-4 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeVideoFile}</h2>
+
+            {/* Language selectors */}
+            <div className="flex flex-row gap-4 mb-4 w-full items-center justify-center">
+              {/* Input Language Selector */}
+              <div className="flex flex-col w-full items-center">
+                <label className="text-sm font-semibold mb-1 relative">{t.inputLanguage}</label>
+                <select
+                  value={inputLanguage}
+                  onChange={e => setInputLanguage(e.target.value)}
+                  className={`rounded-lg px-3 py-2 border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+                >
+                  <option value="en">English</option>
+                  <option value="zh">Chinese</option>
+                  <option value="ja">Japanese</option>
+                </select>
+              </div>
+              {/* Output Language Selector */}
+              <div className="flex flex-col w-full items-center">
+                <label className="text-sm font-semibold mb-1 relative">{t.outputLanguage}</label>
+                <select
+                  value={outputLanguage}
+                  onChange={e => setOutputLanguage(e.target.value)}
+                  className={`rounded-lg px-3 py-2 border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+                >
+                  <option value="en">English</option>
+                  <option value="zh">Chinese</option>
+                  <option value="ja">Japanese</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Instruction label */}
+            {/* <p className="text-sm font-semibold mb-4">{t.languageSelector}</p> */}
+
+            {/* File upload area, file info, buttons, etc. */}
             {selectedFile ? (
               <div className="text-center w-full flex flex-col items-center gap-1 relative">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-green-600 font-semibold mt-10 lg:mt-0">✓ File selected</p>
+                  <p className="text-green-600 font-semibold mt-10 lg:mt-0">{t.fileSelected}</p>
                   <button
                     onClick={handleRemoveFile}
                     aria-label="Remove file"
@@ -163,23 +318,24 @@ export default function Home() {
                   </button>
                 </div>
                 <div className="flex flex-row items-center justify-center gap-2">
-                <p className={`text-sm font-semibold mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedFile.name}</p>
-                <p className="text-sm text-gray-500 mt-2">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                <p className={`text-sm font-semibold mt-2 mb-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{selectedFile.name}</p>
+                <p className="text-sm text-gray-500 mt-2 mb-5">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
                 </div>
               </div>
             ) : (
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Drop or upload your video here</p>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t.dropOrUpload}</p>
             )}
             <button
-              onClick={selectedFile ? undefined : handleUploadClick}
+              onClick={selectedFile ? handleTranscribe : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
                   ? 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
-            >
-              {selectedFile ? 'Transcribe' : 'Upload'}
-            </button>
+              disabled={isTranscribing}
+                          >
+                {isTranscribing ? t.transcribing : selectedFile ? t.transcribe : t.upload}
+              </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -188,7 +344,7 @@ export default function Home() {
               className="hidden"
             />
             {!selectedFile && (
-              <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Supported formats: mp4, mov, avi, mkv, etc.</p>
+              <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t.supportedFormats}</p>
             )}
             {/* Video Preview at the bottom */}
             {selectedFile && (
@@ -208,25 +364,22 @@ export default function Home() {
         <div className={`flex flex-col items-center pt-17 w-full lg:w-1/2 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300'
         }`}>
-          <h2 className={`absolute top-4 text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-black'}`}>Transcribe a YouTube video</h2>
+          <h2 className={`absolute top-4 text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeYouTube}</h2>
           <div className="w-full flex justify-center mt-10">
-            <Link
-              href={{
-                pathname: '/transcribe',
-                query: {
-                  url: 'https://www.youtube.com/'
-                }
-              }}
-              className="text-blue-600 hover:underline text-sm font-medium"
+            <a
+              href="https://www.youtube.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`text-blue-600 hover:underline text-md font-medium ${isDarkMode ? 'dark:text-green-600' : ''}`}
             >
               https://www.youtube.com/
-            </Link>
+            </a>
           </div>
           <div className="flex flex-col items-center justify-center gap-5 mt- w-full pt-20">
             <div className="text-center w-full">
               <input
                 type="text"
-                placeholder="Paste YouTube link here"
+                placeholder={t.pasteYouTubeLink}
                 className={`w-full max-w-md p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 ${
                   isDarkMode 
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
@@ -237,12 +390,24 @@ export default function Home() {
             <button
               className="text-white bg-blue-500 p-3 rounded-full w-[150px] cursor-pointer hover:bg-blue-400 font-extrabold"
             >
-              Transcribe
+              {t.transcribe}
             </button>
-            <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Paste a YouTube link to transcribe its audio.</p>
+            <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t.pasteYouTubeDescription}</p>
           </div>
         </div>
       </div>
+      {/* Transcription Result */}
+      {/* Temporary Text holder for testing */}
+      {true && (
+        <div className="w-full lg:w-[960px] mx-auto mt-8">
+          <div className={`p-6 rounded-2xl shadow-lg border
+            ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}
+          `}>
+            <h3 className="font-semibold mb-2 text-2xl">{t.transcriptionResult}</h3>
+            <p className="text-md whitespace-pre-wrap">{transcriptionResult}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
