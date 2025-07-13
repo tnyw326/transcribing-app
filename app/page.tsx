@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -44,25 +45,38 @@ export default function Home() {
   };
 
   async function handleTranscribeClick(selectedFile: File) {
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-
-    const response = await fetch("/api/transcribe", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("Server error:", text);
-      return;
-    }
+    setIsTranscribing(true);
     
-    const result = await response.json();
-    console.log(result.text);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Server error:", text);
+        return;
+      }
+      
+      const result = await response.json();
+      console.log(result.text);
+    } catch (error) {
+      console.error("Transcription error:", error);
+    } finally {
+      setIsTranscribing(false);
     }
+  }
 
   const handleRemoveFile = () => setSelectedFile(null);
+
+  const resetToOriginalState = () => {
+    setSelectedFile(null);
+    setIsTranscribing(false);
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-geist-sans)] bg-blue-100 text-center">
@@ -111,13 +125,26 @@ export default function Home() {
             )}
             <button
               onClick={selectedFile ? () => handleTranscribeClick(selectedFile) : handleUploadClick}
+              disabled={isTranscribing}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
-                  ? 'bg-green-500 hover:bg-green-400 mb-40'
+                  ? isTranscribing 
+                    ? 'bg-gray-400 cursor-not-allowed mb-40'
+                    : 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
             >
-              {selectedFile ? 'Transcribe' : 'Upload'}
+              {selectedFile 
+                ? isTranscribing 
+                  ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Transcribing...</span>
+                    </div>
+                  )
+                  : 'Transcribe' 
+                : 'Upload'
+              }
             </button>
             <input
               ref={fileInputRef}

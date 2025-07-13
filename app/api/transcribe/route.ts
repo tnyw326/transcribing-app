@@ -9,15 +9,15 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
- 
+
   const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
 
   if (!deepgramApiKey) {
     console.error("❌ Missing API key");
     return NextResponse.json({ error: "Missing API key" }, { status: 500 });
   }
-  
-  const response = await fetch('https://api.deepgram.com/v1/listen', {
+
+  const response = await fetch('https://api.deepgram.com/v1/listen?punctuate=true', {
     method: 'POST',
     headers: {
       'Authorization': `Token ${deepgramApiKey!}`,
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     },
     body: buffer,
   });
-  
+
   const result = await response.json();
   const transcript = result.results.channels[0].alternatives[0].transcript;
 
