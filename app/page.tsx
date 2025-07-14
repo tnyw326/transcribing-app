@@ -68,11 +68,15 @@ import OpenAI from 'openai';
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const [isFileSelected, setIsFileSelected] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<string>("");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputLanguage, setInputLanguage] = useState("en");
   const [outputLanguage, setOutputLanguage] = useState("en");
@@ -164,6 +168,11 @@ export default function Home() {
     } finally {
       setIsTranscribing(false);
     }
+  };
+
+  const resetToOriginalState = () => {
+    setSelectedFile(null);
+    setIsTranscribing(false);
   };
 
   return (
@@ -333,7 +342,9 @@ export default function Home() {
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
-                  ? 'bg-green-500 hover:bg-green-400 mb-40'
+                  ? isTranscribing 
+                    ? 'bg-gray-400 cursor-not-allowed mb-40'
+                    : 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
               disabled={isTranscribing}
