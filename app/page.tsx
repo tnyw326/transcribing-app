@@ -86,6 +86,7 @@ import OpenAI from 'openai';
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -147,6 +148,33 @@ export default function Home() {
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
+
+  async function handleTranscribeClick(selectedFile: File) {
+    setIsTranscribing(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Server error:", text);
+        return;
+      }
+      
+      const result = await response.json();
+      console.log(result.text);
+    } catch (error) {
+      console.error("Transcription error:", error);
+    } finally {
+      resetToOriginalState();
+    }
+  }
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
@@ -356,7 +384,9 @@ export default function Home() {
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
-                  ? 'bg-green-500 hover:bg-green-400 mb-40'
+                  ? isTranscribing 
+                    ? 'bg-gray-400 cursor-not-allowed mb-40'
+                    : 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
               disabled={isTranscribing}
