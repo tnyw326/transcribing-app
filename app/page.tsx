@@ -172,7 +172,7 @@ export default function Home() {
     } catch (error) {
       console.error("Transcription error:", error);
     } finally {
-      resetToOriginalState();
+      setIsTranscribing(false);
     }
   }
 
