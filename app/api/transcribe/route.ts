@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: "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"
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 export async function POST(request: NextRequest) {
@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const inputLanguage = formData.get('inputLanguage') as string;
     const outputLanguage = formData.get('outputLanguage') as string;
+    const resultMode = formData.get('resultMode') as string;
+    const resultLang = formData.get('resultLang') as string;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -42,9 +44,20 @@ export async function POST(request: NextRequest) {
       translatedTranscription = translationResponse.choices[0].message.content || '';
     }
 
+    // 3. Always summarize the transcription
+    let summarizedTranscription = translatedTranscription;
+    const summaryPrompt = `Summarize the following video transcription in ${resultLang} language: ${translatedTranscription}, but don't mention we used text to summarize it.
+    The summary should be concise, and only include the main points of the video. It should be easy to understand and list bullet points if necessary.`;
+    const summaryResponse = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: summaryPrompt }],
+    });
+    summarizedTranscription = summaryResponse.choices[0].message.content || '';
+
     return NextResponse.json({ 
-      transcription: translatedTranscription,
-      language: inputLanguage === 'zh' ? 'zh' : inputLanguage === 'ja' ? 'ja' : 'en'
+      original: translatedTranscription,
+      summary: summarizedTranscription,
+      language: inputLanguage === 'zh' ? 'zh' : inputLanguage === 'ja' ? 'ja' : 'en',
     });
 
   } catch (error) {
