@@ -20,10 +20,16 @@ import OpenAI from 'openai';
       pasteYouTubeLink: "Paste YouTube link here",
       pasteYouTubeDescription: "Paste a YouTube link to transcribe its audio.",
       pleaseSelectValidVideo: "Please select a valid video file",
-      transcriptionResult: "Transcription Result:",
+      transcriptionOriginal: "Transcription Result:",
+      transcriptionSummary: "Summary Result:",
       languageSelector: "Please select the language of the input and output video.",
       inputLanguage: "Input Language",
-      outputLanguage: "Output Language"
+      outputLanguage: "Output Language",
+      original: "Original",
+      summary: "Summary",
+      en: "EN",
+      zh: "CH",
+      ja: "JA"
     },
     zh: {
       title: "视频转换为文字",
@@ -39,10 +45,16 @@ import OpenAI from 'openai';
       pasteYouTubeLink: "粘贴YouTube链接",
       pasteYouTubeDescription: "粘贴YouTube链接以转录其音频。",
       pleaseSelectValidVideo: "请选择视频格式",
-      transcriptionResult: "转录结果：",
+      transcriptionOriginal: "转录结果：",
+      transcriptionSummary: "总结结果：",
       languageSelector: "请选择输入和输出视频的语言。",
       inputLanguage: "视频语言",
-      outputLanguage: "输出语言"
+      outputLanguage: "输出语言",
+      original: "原文",
+      summary: "总结",
+      en: "英語",
+      zh: "中文",
+      ja: "日语"
     },
     ja: {
       title: "動画をテキストに変換",
@@ -58,10 +70,16 @@ import OpenAI from 'openai';
       pasteYouTubeLink: "ここにYouTubeリンクを貼り付けてください",
       pasteYouTubeDescription: "YouTubeリンクを貼り付けて音声を文字起こしします。",
       pleaseSelectValidVideo: "有効な動画ファイルを選択してください",
-      transcriptionResult: "文字起こし：",
+      transcriptionOriginal: "文字起こし：",
+      transcriptionSummary: "要約：",
       languageSelector: "動画の入力言語と出力言語を選択してください。",
       inputLanguage: "入力言語",
-      outputLanguage: "出力言語"
+      outputLanguage: "出力言語",
+      original: "原文",
+      summary: "要約",
+      en: "英語",
+      zh: "中国語",
+      ja: "日本語"
     }
   };
 
@@ -71,10 +89,14 @@ export default function Home() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [transcriptionResult, setTranscriptionResult] = useState<string>("");
+  const [transcriptionOriginal, setTranscriptionOriginal] = useState<string>("");
+  const [transcriptionSummary, setTranscriptionSummary] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputLanguage, setInputLanguage] = useState("en");
   const [outputLanguage, setOutputLanguage] = useState("en");
+  const [resultMode, setResultMode] = useState("original"); // "original" or "summary"
+  const [resultLang, setResultLang] = useState("en"); // "en", "zh", "ja"
+
 
   // Get current translations based on selected language
   const t = translations[selectedLanguage as keyof typeof translations] || translations.en;
@@ -128,20 +150,24 @@ export default function Home() {
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
-    setTranscriptionResult("");
+    setTranscriptionOriginal("");
+    setTranscriptionSummary("");
   };
 
   const handleTranscribe = async () => {
     if (!selectedFile) return;
 
     setIsTranscribing(true);
-    setTranscriptionResult("");
+    setTranscriptionOriginal("");
+    setTranscriptionSummary("");
 
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('inputLanguage', inputLanguage);
       formData.append('outputLanguage', outputLanguage);
+      formData.append('resultLang', resultLang);
+      formData.append('resultMode', resultMode);
 
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -153,7 +179,8 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setTranscriptionResult(data.transcription);
+      setTranscriptionOriginal(data.original);
+      setTranscriptionSummary(data.summary);
     } catch (error) {
       console.error('Transcription error:', error);
       alert('Transcription failed. Please try again.');
@@ -396,15 +423,63 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {/* Original | Summary Toggle */}
+      <div className="w-full lg:w-[960px] mx-auto flex flex-row justify-end items-center mt-8">
+        {/* Original | Summary Toggle */}
+        <div className="flex items-center gap-2 mr-6">
+          <button
+            className={`px-3 py-1 rounded-l-lg border ${resultMode === "original" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+            onClick={() => setResultMode("original")}
+          >
+            {t.original}
+          </button>
+          <button
+            className={`px-3 py-1 rounded-r-lg border-l-0 border ${resultMode === "summary" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+            onClick={() => setResultMode("summary")}
+          >
+            {t.summary}
+          </button>
+        </div>
+        {/* EN | CH | JA Toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            className={`px-3 py-1 rounded-l-lg border ${resultLang === "en" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+            onClick={() => setResultLang("en")}
+          >
+            {t.en}
+          </button>
+          <button
+            className={`px-3 py-1 border-l-0 border ${resultLang === "zh" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+            onClick={() => setResultLang("zh")}
+          >
+            {t.zh}
+          </button>
+          <button
+            className={`px-3 py-1 rounded-r-lg border-l-0 border ${resultLang === "ja" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+            onClick={() => setResultLang("ja")}
+          >
+            {t.ja}
+          </button>
+        </div>
+      </div>
       {/* Transcription Result */}
-      {/* Temporary Text holder for testing */}
-      {true && (
-        <div className="w-full lg:w-[960px] mx-auto mt-8">
+      {resultMode === "original" && (
+        <div className="w-full lg:w-[960px] mx-auto">
           <div className={`p-6 rounded-2xl shadow-lg border
             ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}
           `}>
-            <h3 className="font-semibold mb-2 text-2xl">{t.transcriptionResult}</h3>
-            <p className="text-md whitespace-pre-wrap">{transcriptionResult}</p>
+            <h3 className="font-semibold mb-2 text-2xl">{t.transcriptionOriginal}</h3>
+            <p className="text-md whitespace-pre-wrap">{transcriptionOriginal}</p>
+          </div>
+        </div>
+      )}
+      {resultMode === "summary" && (
+        <div className="w-full lg:w-[960px] mx-auto">
+          <div className={`p-6 rounded-2xl shadow-lg border
+            ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}
+          `}>
+            <h3 className="font-semibold mb-2 text-2xl">{t.transcriptionSummary}</h3>
+            <p className="text-md whitespace-pre-wrap">{transcriptionSummary}</p>
           </div>
         </div>
       )}
