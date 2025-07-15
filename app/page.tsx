@@ -76,7 +76,7 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputLanguage, setInputLanguage] = useState("en");
   const [outputLanguage, setOutputLanguage] = useState("en");
-
+  
   // Get current translations based on selected language
   const t = translations[selectedLanguage as keyof typeof translations] || translations.en;
 
@@ -120,6 +120,7 @@ export default function Home() {
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
       setIsFileSelected(true);
+      setTranscriptionResult(""); // Clear previous transcription 
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
@@ -162,8 +163,14 @@ export default function Home() {
       console.error('Transcription error:', error);
       alert('Transcription failed. Please try again.');
     } finally {
-      setIsTranscribing(false);
+      resetToOriginalState();
     }
+  };
+
+  const resetToOriginalState = () => {
+    setSelectedFile(null);
+    setIsTranscribing(false);
+    setIsFileSelected(false);
   };
 
   return (
