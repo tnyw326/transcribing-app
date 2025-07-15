@@ -68,15 +68,11 @@ import OpenAI from 'openai';
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const [isFileSelected, setIsFileSelected] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<string>("");
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputLanguage, setInputLanguage] = useState("en");
   const [outputLanguage, setOutputLanguage] = useState("en");
@@ -170,11 +166,6 @@ export default function Home() {
     }
   };
 
-  const resetToOriginalState = () => {
-    setSelectedFile(null);
-    setIsTranscribing(false);
-  };
-
   return (
     <div className={`flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-inter)] ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-blue-100 text-black'} text-center relative transition-colors duration-300`}>
       {/* Language Selector and Dark Mode Toggle - Top Right */}
@@ -253,10 +244,10 @@ export default function Home() {
         <p className="text-5xl font-extrabold">{t.title}</p>
         <p className="text-2xl font-normal">{t.subtitle}</p>
       </div>
-      <div className={`flex flex-col lg:flex-row w-full lg:w-[960px] h-[550px] gap-0 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+      <div className={`flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[485px] h-[940px] gap-0 ${isDarkMode ? 'text-white' : 'text-black'}`}>
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full lg:w-1/2 lg:mr-5 h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center w-full lg:w-1/2 lg:mr-5 lg:h-full h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
             isDragOver
               ? isDarkMode 
                 ? 'border-blue-400 bg-blue-900/20' 
@@ -278,7 +269,7 @@ export default function Home() {
             <h2 className={`text-3xl font-bold pt-10 mb-4 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeVideoFile}</h2>
 
             {/* Language selectors */}
-            <div className={`flex flex-row mb-4 w-full items-center ${isFileSelected ? 'mt-5' : 'lg:mt-21 mt-10'}`}>
+            <div className={`flex flex-row mb-4 w-full items-center ${isFileSelected ? 'mt-0' : 'lg:mt-21 mt-10'}`}>
               {/* Input Language Selector */}
               <div className="flex flex-col w-full items-center">
                 <label className="text-sm font-semibold mb-1 relative">{t.inputLanguage}</label>
@@ -314,11 +305,11 @@ export default function Home() {
             {selectedFile ? (
               <div className="text-center w-full flex flex-col items-center gap-1 relative">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-green-600 font-semibold mt-10 lg:mt-0">{t.fileSelected}</p>
+                  <p className="text-green-600 font-semibold mt-0">{t.fileSelected}</p>
                   <button
                     onClick={handleRemoveFile}
                     aria-label="Remove file"
-                    className={`ml-1 p-1 rounded-full transition-colors mt-10 lg:mt-0 ${
+                    className={`ml-1 p-1 rounded-full transition-colors mt-0 ${
                       isDarkMode 
                         ? 'hover:bg-gray-700' 
                         : 'hover:bg-gray-200'
@@ -342,9 +333,7 @@ export default function Home() {
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
-                  ? isTranscribing 
-                    ? 'bg-gray-400 cursor-not-allowed mb-40'
-                    : 'bg-green-500 hover:bg-green-400 mb-40'
+                  ? 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
               disabled={isTranscribing}
@@ -376,7 +365,7 @@ export default function Home() {
           </div>
         </div>
         {/* YouTube Card */}
-        <div className={`flex flex-col items-center pt-17 lg:w-1/2 h-[550px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
+        <div className={`flex flex-col items-center pt-17 lg:w-1/2 h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300'
         }`}>
           <h2 className={`absolute top-4 text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeYouTube}</h2>
