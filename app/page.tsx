@@ -86,7 +86,7 @@ import OpenAI from 'openai';
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+  const [isFileSelected, setIsFileSelected] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -131,6 +131,7 @@ export default function Home() {
 
     if (videoFile) {
       setSelectedFile(videoFile);
+      setIsFileSelected(true);
     } else {
       alert(t.pleaseSelectValidVideo);
     }
@@ -140,6 +141,7 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
+      setIsFileSelected(true);
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
@@ -149,40 +151,47 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  async function handleTranscribeClick(selectedFile: File) {
-    setIsTranscribing(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-
-      const response = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Server error:", text);
-        return;
-      }
-      
-      const result = await response.json();
-      console.log(result.text);
-    } catch (error) {
-      console.error("Transcription error:", error);
-    } finally {
-      setIsTranscribing(false);
-    }
-  }
-
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setTranscriptionOriginal("");
     setTranscriptionSummary("");
+    setIsFileSelected(false);
   };
 
   const handleTranscribe = async () => {
+    if (!selectedFile) return;
+
+    setIsTranscribing(true);
+    setTranscriptionOriginal("");
+    setTranscriptionSummary("");
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('inputLanguage', inputLanguage);
+      formData.append('outputLanguage', outputLanguage);
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Transcription failed');
+      }
+
+      const data = await response.json();
+      setTranscriptionOriginal(data.original);
+      setTranscriptionSummary(data.summary);
+    } catch (error) {
+      console.error('Transcription error:', error);
+      alert('Transcription failed. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const handleTranscribeYouTube = async () => {
     if (!selectedFile) return;
 
     setIsTranscribing(true);
@@ -295,10 +304,10 @@ export default function Home() {
         <p className="text-5xl font-extrabold">{t.title}</p>
         <p className="text-2xl font-normal">{t.subtitle}</p>
       </div>
-      <div className={`flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[500px] h-[800px] gap-0 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+      <div className={`flex flex-col lg:flex-row w-full lg:w-[960px] lg:h-[485px] h-[940px] gap-0 ${isDarkMode ? 'text-white' : 'text-black'}`}>
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full lg:w-1/2 lg:mr-5 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center w-full lg:w-1/2 lg:mr-5 lg:h-full h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
             isDragOver
               ? isDarkMode 
                 ? 'border-blue-400 bg-blue-900/20' 
@@ -320,7 +329,7 @@ export default function Home() {
             <h2 className={`text-3xl font-bold pt-10 mb-4 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeVideoFile}</h2>
 
             {/* Language selectors */}
-            <div className="flex flex-row gap-4 mb-4 w-full items-center justify-center">
+            <div className={`flex flex-row mb-4 w-full items-center ${isFileSelected ? 'mt-0' : 'lg:mt-21 mt-10'}`}>
               {/* Input Language Selector */}
               <div className="flex flex-col w-full items-center">
                 <label className="text-sm font-semibold mb-1 relative">{t.inputLanguage}</label>
@@ -356,11 +365,11 @@ export default function Home() {
             {selectedFile ? (
               <div className="text-center w-full flex flex-col items-center gap-1 relative">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-green-600 font-semibold mt-10 lg:mt-0">{t.fileSelected}</p>
+                  <p className="text-green-600 font-semibold mt-0">{t.fileSelected}</p>
                   <button
                     onClick={handleRemoveFile}
                     aria-label="Remove file"
-                    className={`ml-1 p-1 rounded-full transition-colors mt-10 lg:mt-0 ${
+                    className={`ml-1 p-1 rounded-full transition-colors mt-0 ${
                       isDarkMode 
                         ? 'hover:bg-gray-700' 
                         : 'hover:bg-gray-200'
@@ -384,9 +393,7 @@ export default function Home() {
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
               className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors ${
                 selectedFile
-                  ? isTranscribing 
-                    ? 'bg-gray-400 cursor-not-allowed mb-40'
-                    : 'bg-green-500 hover:bg-green-400 mb-40'
+                  ? 'bg-green-500 hover:bg-green-400 mb-40'
                   : 'bg-blue-500 hover:bg-blue-400'
               }`}
               disabled={isTranscribing}
@@ -418,7 +425,7 @@ export default function Home() {
           </div>
         </div>
         {/* YouTube Card */}
-        <div className={`flex flex-col items-center pt-17 w-full lg:w-1/2 h-1/2 lg:h-full mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
+        <div className={`flex flex-col items-center pt-17 lg:w-1/2 h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300'
         }`}>
           <h2 className={`absolute top-4 text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeYouTube}</h2>
@@ -432,7 +439,7 @@ export default function Home() {
               https://www.youtube.com/
             </a>
           </div>
-          <div className="flex flex-col items-center justify-center gap-5 mt- w-full pt-20">
+          <div className="flex flex-col items-center justify-center gap-5 mt- w-full lg:pt-20 pt-10">
             <div className="text-center w-full">
               <input
                 type="text"
