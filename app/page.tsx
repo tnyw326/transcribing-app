@@ -120,6 +120,7 @@ export default function Home() {
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
       setIsFileSelected(true);
+      setTranscriptionResult("");
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
