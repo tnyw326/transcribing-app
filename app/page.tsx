@@ -86,6 +86,7 @@ import OpenAI from 'openai';
 export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
   const [isFileSelected, setIsFileSelected] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -201,48 +202,12 @@ export default function Home() {
   };
 
   const handleTranscribeYouTube = async () => {
-    if (!selectedFile) return;
+    const url = urlInputRef.current?.value;
+    if (!url) return;
 
-    setIsTranscribing(true);
-    setTranscriptionOriginal("");
-    setTranscriptionSummary("");
-    setAllTranslations({});
-    setAllSummaries({});
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('inputLanguage', inputLanguage);
-      formData.append('outputLanguage', outputLanguage);
-      formData.append('resultLang', resultLang);
-      formData.append('resultMode', resultMode);
-
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Transcription failed');
-      }
-
-      const data = await response.json();
-      setTranscriptionOriginal(data.original);
-      setTranscriptionSummary(data.summary);
-      setAllTranslations(data.translations || {});
-      setAllSummaries(data.summaries || {});
-    } catch (error) {
-      console.error('Transcription error:', error);
-      alert('Transcription failed. Please try again.');
-    } finally {
-      resetToOriginalState();
-    }
-  };
-
-  const resetToOriginalState = () => {
-    setSelectedFile(null);
-    setIsTranscribing(false);
-    setIsFileSelected(false);
+    const response = await fetch(`/api/youtube-captions?url=${url}`);
+    const data = await response.json();
+    console.log(data);
   };
 
   return (
@@ -450,6 +415,7 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center w-full">
             <div className="text-center w-full">
               <input
+                ref={urlInputRef}
                 type="text"
                 placeholder={t.pasteYouTubeLink}
                 className={`w-full max-w-md p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 ${
@@ -465,6 +431,7 @@ export default function Home() {
           <div className="flex-1"></div>
           <button
             className="text-white bg-blue-500 p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors"
+            onClick={handleTranscribeYouTube}
           >
             {t.transcribe}
           </button>
