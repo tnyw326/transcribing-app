@@ -104,6 +104,9 @@ export default function Home() {
   // Get current translations based on selected language
   const t = translations[selectedLanguage as keyof typeof translations] || translations.en;
 
+  // Check if video is uploaded
+  const isVideoUploaded = selectedFile !== null && isFileSelected;
+
   const languages = [
     { code: "en", name: "English" },
     { code: "zh", name: "中文" },
@@ -288,10 +291,10 @@ export default function Home() {
         <p className="text-5xl font-extrabold">{t.title}</p>
         <p className="text-2xl font-normal">{t.subtitle}</p>
       </div>
-      <div className={`flex flex-col lg:flex-row w-full ${selectedFile ? 'lg:w-[1440px]' : 'lg:w-[1080px]'} lg:h-[485px] h-[940px] gap-5 ${isDarkMode ? 'text-white' : 'text-black'}`}>
+      <div className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-5 ${isDarkMode ? 'text-white' : 'text-black'}`}>
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full ${selectedFile ? 'lg:w-1/3' : 'lg:w-1/2'} lg:h-full h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center w-full ${isVideoUploaded ? 'lg:w-1/3' : 'lg:w-1/2'} lg:h-[485px] h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
             isDragOver
               ? isDarkMode 
                 ? 'border-blue-400 bg-blue-900/20' 
@@ -398,7 +401,7 @@ export default function Home() {
           </div>
         </div>
         {/* YouTube Card */}
-        <div className={`flex flex-col items-center ${selectedFile ? 'lg:w-1/3' : 'lg:w-1/2'} h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
+        <div className={`flex flex-col items-center w-full ${isVideoUploaded ? 'lg:w-1/3' : 'lg:w-1/2'} h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300'
         }`}>
           <h2 className={`text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-black'}`}>{t.transcribeYouTube}</h2>
@@ -440,8 +443,8 @@ export default function Home() {
           </div>
         </div>
         {/* Video Preview Card - Appears after file upload */}
-        {selectedFile && (
-          <div className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[485px] mb-5 lg:mt-0 rounded-3xl gap-5 relative p-6 border-4 ${
+        {isVideoUploaded && (
+          <div className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
             isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300'
           }`}>
             <div className="flex flex-col items-center justify-center gap-5 w-full">
@@ -464,8 +467,8 @@ export default function Home() {
         )}
       </div>
       {/* Original | Summary Toggle - Show when transcription is complete OR for demo */}
-      {(transcriptionOriginal || transcriptionSummary || !selectedFile) && (
-        <div className={`w-full mx-auto flex flex-row justify-end items-center mt-1 ${selectedFile ? 'lg:w-[1440px]' : 'lg:w-[960px]'}`}>
+      {(transcriptionOriginal || transcriptionSummary || !isVideoUploaded) && (
+        <div className={`w-full max-w-7xl mx-auto flex flex-row justify-end items-center mt-1`}>
           {/* Original | Summary Toggle */}
           <div className="flex items-center gap-1 mr-8">
             <button
@@ -525,8 +528,8 @@ export default function Home() {
         </div>
       )}
       {/* Transcription Result */}
-      {resultMode === "original" && (transcriptionOriginal || Object.keys(allTranslations).length > 0 || !selectedFile) && (
-        <div className={`w-full mx-auto ${selectedFile ? 'lg:w-[1440px]' : 'lg:w-[960px]'}`}>
+      {resultMode === "original" && (transcriptionOriginal || Object.keys(allTranslations).length > 0 || !isVideoUploaded) && (
+        <div className={`w-full max-w-7xl mx-auto`}>
           <div className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
             isDarkMode 
               ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 text-white shadow-gray-900/50' 
@@ -569,7 +572,7 @@ export default function Home() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Generated at {new Date().toLocaleTimeString()}</span>
+                {/* <span>Generated at {new Date().toLocaleTimeString()}</span> */}
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -583,8 +586,8 @@ export default function Home() {
         </div>
       )}
       
-      {resultMode === "summary" && (transcriptionSummary || Object.keys(allSummaries).length > 0 || !selectedFile) && (
-        <div className={`w-full mx-auto ${selectedFile ? 'lg:w-[1440px]' : 'lg:w-[960px]'}`}>
+      {resultMode === "summary" && (transcriptionSummary || Object.keys(allSummaries).length > 0 || !isVideoUploaded) && (
+        <div className={`w-full max-w-7xl mx-auto`}>
           <div className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
             isDarkMode 
               ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 text-white shadow-gray-900/50' 
