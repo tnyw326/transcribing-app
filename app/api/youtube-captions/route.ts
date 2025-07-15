@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
   const params = new URLSearchParams();
   params.set('url', url!);
   params.set('text', text ?? 'false');
-  params.set('mode', 'native');
 
   const res = await fetch(
     `https://api.supadata.ai/v1/youtube/transcript?${params}`,
