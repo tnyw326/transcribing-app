@@ -143,7 +143,10 @@ export default function Home() {
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
       setIsFileSelected(true);
-      setTranscriptionResult(""); // Clear previous transcription 
+      setTranscriptionOriginal("");
+      setTranscriptionSummary("");
+      setAllTranslations({});
+      setAllSummaries({});
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
