@@ -143,14 +143,10 @@ export default function Home() {
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
       setIsFileSelected(true);
-<<<<<<< HEAD
-      setTranscriptionResult("");
-=======
       setTranscriptionOriginal("");
       setTranscriptionSummary("");
       setAllTranslations({});
       setAllSummaries({});
->>>>>>> origin/main
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
