@@ -527,7 +527,7 @@ export default function Home() {
             <button
               className={`px-6 py-3 rounded-l-xl border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
                 resultMode === "original" 
-                  ? (isDarkMode ? "bg-red-400 text-white border-red-400 shadow-red-400/25" : "bg-[#2563eb] text-white border-[#2563eb] shadow-[#2563eb]/25")
+                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
               }`}
               onClick={() => setResultMode("original")}
@@ -537,7 +537,7 @@ export default function Home() {
             <button
               className={`px-6 py-3 rounded-r-xl border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
                 resultMode === "summary" 
-                  ? (isDarkMode ? "bg-red-400 text-white border-red-400 shadow-red-400/25" : "bg-[#2563eb] text-white border-[#2563eb] shadow-[#2563eb]/25")
+                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
               }`}
               onClick={() => setResultMode("summary")}
@@ -550,7 +550,7 @@ export default function Home() {
             <button
               className={`px-6 py-3 rounded-l-xl border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
                 resultLang === "en" 
-                  ? (isDarkMode ? "bg-red-400 text-white border-red-400 shadow-red-400/25" : "bg-[#22c55e] text-white border-[#22c55e] shadow-[#22c55e]/25")
+                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
               }`}
               onClick={() => setResultLang("en")}
@@ -560,7 +560,7 @@ export default function Home() {
             <button
               className={`px-6 py-3 border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
                 resultLang === "zh" 
-                  ? (isDarkMode ? "bg-red-400 text-white border-red-400 shadow-red-400/25" : "bg-[#2563eb] text-white border-[#2563eb] shadow-[#2563eb]/25")
+                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
               }`}
               onClick={() => setResultLang("zh")}
@@ -570,7 +570,7 @@ export default function Home() {
             <button
               className={`px-6 py-3 rounded-r-xl border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
                 resultLang === "ja" 
-                  ? (isDarkMode ? "bg-red-400 text-white border-red-400 shadow-red-400/25" : "bg-[#f59e42] text-white border-[#f59e42] shadow-[#f59e42]/25")
+                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
               }`}
               onClick={() => setResultLang("ja")}
@@ -647,7 +647,7 @@ export default function Home() {
           }`}>
             {/* Header with icon */}
             <div className="flex items-center gap-3 mb-6">
-              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}> 
+              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
                 <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
