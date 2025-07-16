@@ -634,7 +634,6 @@ export default function Home() {
           </div>
         </div>
       )}
-      
       {resultMode === "summary" && (transcriptionSummary || Object.keys(allSummaries).length > 0 || !selectedFile) && (
         <div className={`w-full max-w-7xl mx-auto`}>
           <div className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
