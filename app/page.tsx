@@ -230,7 +230,7 @@ export default function Home() {
     try {
       const response = await fetch(`/api/youtube-captions?url=${url}&text=true`);
       const data = await response.json();
-      const captions = data.content;
+      const captions = (data.content || data.details || data.message);
       const paragraph = captions.replace(/\n+/g, ' ');
       
       setTranscriptionOriginal(paragraph);
@@ -239,7 +239,7 @@ export default function Home() {
       setAllSummaries({ en: "This feature is currently not available for YouTube videos.", zh: "此功能目前不适用于 YouTube 视频。", ja: "この機能は現在 YouTube 動画ではご利用いただけません。" });
     } catch (error) {
       console.error('YouTube transcription error:', error);
-      setYoutubeError("Failed to transcribe video. Please try again.");
+      setYoutubeError("Failed to transcribe video. Please see details below.");
     } finally {
       setIsTranscribingYouTube(false);
     }
