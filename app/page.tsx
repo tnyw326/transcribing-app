@@ -544,40 +544,7 @@ export default function Home() {
             >
               {t.summary}
             </button>
-          </div>
-          {/* EN | CH | JA Toggle */}
-          <div className="flex items-center gap-1">
-            <button
-              className={`px-6 py-3 rounded-l-xl border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultLang === "en" 
-                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
-                  : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
-              }`}
-              onClick={() => setResultLang("en")}
-            >
-              {t.en}
-            </button>
-            <button
-              className={`px-6 py-3 border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultLang === "zh" 
-                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
-                  : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
-              }`}
-              onClick={() => setResultLang("zh")}
-            >
-              {t.zh}
-            </button>
-            <button
-              className={`px-6 py-3 rounded-r-xl border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultLang === "ja" 
-                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
-                  : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
-              }`}
-              onClick={() => setResultLang("ja")}
-            >
-              {t.ja}
-            </button>
-          </div>
+          </div>    
         </div>
       )}
       {/* Transcription Result */}
