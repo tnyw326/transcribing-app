@@ -211,7 +211,11 @@ export default function Home() {
     if (!url) {
       setYoutubeError("No link is provided");
       return;
-    } else if (!url.toLowerCase().includes("youtube.com") || !url.toLowerCase().includes("watch?v=")) {
+    }
+
+    const YOUTUBE_VIDEO_REGEX = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
+    if (!YOUTUBE_VIDEO_REGEX.test(url)) {
       setYoutubeError("Please provide a valid YouTube video link");
       return;
     }
@@ -634,7 +638,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      {resultMode === "summary" && (transcriptionSummary || Object.keys(allSummaries).length > 0 || !selectedFile) && (
+      {resultMode === "summary" && (
         <div className={`w-full max-w-7xl mx-auto`}>
           <div className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
             isDarkMode 
@@ -643,7 +647,7 @@ export default function Home() {
           }`}>
             {/* Header with icon */}
             <div className="flex items-center gap-3 mb-6">
-              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
+              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}> 
                 <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
@@ -659,14 +663,14 @@ export default function Home() {
                 <div className={`text-lg leading-relaxed whitespace-pre-wrap ${
                   isDarkMode ? 'text-gray-100' : 'text-[#374151]'
                 }`}>
-                  {!selectedFile 
-                    ? (resultLang === "en" 
+                  {(allSummaries[resultLang] || transcriptionSummary)
+                    ? (allSummaries[resultLang] || transcriptionSummary)
+                    : (resultLang === "en" 
                         ? "This is a demo summary result. Upload a video file to see the actual summary of your content. The summary will provide a concise overview of the main points and key information from your video."
                         : resultLang === "zh"
                         ? "这是一个演示总结结果。上传视频文件以查看您内容的实际总结。总结将提供视频中要点和关键信息的简明概述。"
                         : "これはデモの要約結果です。ビデオファイルをアップロードして、コンテンツの実際の要約を確認してください。要約は、ビデオの要点と重要な情報の簡潔な概要を提供します。"
                       )
-                    : (allSummaries[resultLang] || transcriptionSummary)
                   }
                 </div>
               </div>
