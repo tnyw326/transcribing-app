@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from 'next/link';
 import fs from 'fs';
 import OpenAI from 'openai';
@@ -102,6 +102,160 @@ export default function Home() {
   const [resultMode, setResultMode] = useState("original"); // "original" or "summary"
   const [resultLang, setResultLang] = useState("en"); // "en", "zh", "ja"
   const [youtubeError, setYoutubeError] = useState("");
+  const [youtubeLanguage, setYoutubeLanguage] = useState("en");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Comprehensive language list for YouTube transcription
+  const youtubeLanguages = [
+    { code: "af", name: "Afrikaans" },
+    { code: "ak", name: "Akan" },
+    { code: "sq", name: "Albanian" },
+    { code: "am", name: "Amharic" },
+    { code: "ar", name: "Arabic" },
+    { code: "hy", name: "Armenian" },
+    { code: "as", name: "Assamese" },
+    { code: "ay", name: "Aymara" },
+    { code: "az", name: "Azerbaijani" },
+    { code: "bn", name: "Bangla" },
+    { code: "eu", name: "Basque" },
+    { code: "be", name: "Belarusian" },
+    { code: "bho", name: "Bhojpuri" },
+    { code: "bs", name: "Bosnian" },
+    { code: "bg", name: "Bulgarian" },
+    { code: "my", name: "Burmese" },
+    { code: "ca", name: "Catalan" },
+    { code: "ceb", name: "Cebuano" },
+    { code: "zh", name: "Chinese" },
+    { code: "zh-HK", name: "Chinese (Hong Kong)" },
+    { code: "zh-CN", name: "Chinese (China)" },
+    { code: "zh-SG", name: "Chinese (Singapore)" },
+    { code: "zh-TW", name: "Chinese (Taiwan)" },
+    { code: "zh-Hans", name: "Chinese (Simplified)" },
+    { code: "zh-Hant", name: "Chinese (Traditional)" },
+    { code: "hak-TW", name: "Hakka Chinese (Taiwan)" },
+    { code: "nan-TW", name: "Min Nan Chinese (Taiwan)" },
+    { code: "co", name: "Corsican" },
+    { code: "hr", name: "Croatian" },
+    { code: "cs", name: "Czech" },
+    { code: "da", name: "Danish" },
+    { code: "dv", name: "Divehi" },
+    { code: "nl", name: "Dutch" },
+    { code: "en", name: "English" },
+    { code: "en-US", name: "English (United States)" },
+    { code: "eo", name: "Esperanto" },
+    { code: "et", name: "Estonian" },
+    { code: "ee", name: "Ewe" },
+    { code: "fil", name: "Filipino" },
+    { code: "fi", name: "Finnish" },
+    { code: "fr", name: "French" },
+    { code: "gl", name: "Galician" },
+    { code: "lg", name: "Ganda" },
+    { code: "ka", name: "Georgian" },
+    { code: "de", name: "German" },
+    { code: "el", name: "Greek" },
+    { code: "gn", name: "Guarani" },
+    { code: "gu", name: "Gujarati" },
+    { code: "ht", name: "Haitian Creole" },
+    { code: "ha", name: "Hausa" },
+    { code: "haw", name: "Hawaiian" },
+    { code: "iw", name: "Hebrew" },
+    { code: "hi", name: "Hindi" },
+    { code: "hmn", name: "Hmong" },
+    { code: "hu", name: "Hungarian" },
+    { code: "is", name: "Icelandic" },
+    { code: "ig", name: "Igbo" },
+    { code: "id", name: "Indonesian" },
+    { code: "ga", name: "Irish" },
+    { code: "it", name: "Italian" },
+    { code: "ja", name: "Japanese" },
+    { code: "jv", name: "Javanese" },
+    { code: "kn", name: "Kannada" },
+    { code: "kk", name: "Kazakh" },
+    { code: "km", name: "Khmer" },
+    { code: "rw", name: "Kinyarwanda" },
+    { code: "ko", name: "Korean" },
+    { code: "kri", name: "Krio" },
+    { code: "ku", name: "Kurdish" },
+    { code: "ky", name: "Kyrgyz" },
+    { code: "lo", name: "Lao" },
+    { code: "la", name: "Latin" },
+    { code: "lv", name: "Latvian" },
+    { code: "ln", name: "Lingala" },
+    { code: "lt", name: "Lithuanian" },
+    { code: "lb", name: "Luxembourgish" },
+    { code: "mk", name: "Macedonian" },
+    { code: "mg", name: "Malagasy" },
+    { code: "ms", name: "Malay" },
+    { code: "ml", name: "Malayalam" },
+    { code: "mt", name: "Maltese" },
+    { code: "mi", name: "Māori" },
+    { code: "mr", name: "Marathi" },
+    { code: "mn", name: "Mongolian" },
+    { code: "ne", name: "Nepali" },
+    { code: "nso", name: "Northern Sotho" },
+    { code: "no", name: "Norwegian" },
+    { code: "ny", name: "Nyanja" },
+    { code: "or", name: "Odia" },
+    { code: "om", name: "Oromo" },
+    { code: "ps", name: "Pashto" },
+    { code: "fa", name: "Persian" },
+    { code: "pl", name: "Polish" },
+    { code: "pt", name: "Portuguese" },
+    { code: "pa", name: "Punjabi" },
+    { code: "qu", name: "Quechua" },
+    { code: "ro", name: "Romanian" },
+    { code: "ru", name: "Russian" },
+    { code: "sm", name: "Samoan" },
+    { code: "sa", name: "Sanskrit" },
+    { code: "gd", name: "Scottish Gaelic" },
+    { code: "sr", name: "Serbian" },
+    { code: "sn", name: "Shona" },
+    { code: "sd", name: "Sindhi" },
+    { code: "si", name: "Sinhala" },
+    { code: "sk", name: "Slovak" },
+    { code: "sl", name: "Slovenian" },
+    { code: "so", name: "Somali" },
+    { code: "st", name: "Southern Sotho" },
+    { code: "es", name: "Spanish" },
+    { code: "su", name: "Sundanese" },
+    { code: "sw", name: "Swahili" },
+    { code: "sv", name: "Swedish" },
+    { code: "tg", name: "Tajik" },
+    { code: "ta", name: "Tamil" },
+    { code: "tt", name: "Tatar" },
+    { code: "te", name: "Telugu" },
+    { code: "th", name: "Thai" },
+    { code: "ti", name: "Tigrinya" },
+    { code: "ts", name: "Tsonga" },
+    { code: "tr", name: "Turkish" },
+    { code: "tk", name: "Turkmen" },
+    { code: "uk", name: "Ukrainian" },
+    { code: "ur", name: "Urdu" },
+    { code: "ug", name: "Uyghur" },
+    { code: "uz", name: "Uzbek" },
+    { code: "vi", name: "Vietnamese" },
+    { code: "cy", name: "Welsh" },
+    { code: "fy", name: "Western Frisian" },
+    { code: "xh", name: "Xhosa" },
+    { code: "yi", name: "Yiddish" },
+    { code: "yo", name: "Yoruba" },
+    { code: "zu", name: "Zulu" }
+  ];
 
   // Get current translations based on selected language
   const t = translations[selectedLanguage as keyof typeof translations] || translations.en;
@@ -149,6 +303,7 @@ export default function Home() {
     if (file && file.type.startsWith('video/')) {
       setSelectedFile(file);
       setIsFileSelected(true);
+      setYoutubeError("");
       setTranscriptionOriginal("");
       setTranscriptionSummary("");
       setAllTranslations({});
@@ -228,7 +383,7 @@ export default function Home() {
     // setSelectedFile(null);
     
     try {
-      const response = await fetch(`/api/youtube-captions?url=${url}&text=true`);
+      const response = await fetch(`/api/youtube-captions?url=${url}&text=true&lang=${youtubeLanguage}`);
       const data = await response.json();
       const captions = (data.content || data.details || data.message);
       const paragraph = captions.replace(/\n+/g, ' ');
@@ -239,8 +394,8 @@ export default function Home() {
       setAllSummaries({ en: "This feature is currently not available for YouTube videos.", zh: "此功能目前不适用于 YouTube 视频。", ja: "この機能は現在 YouTube 動画ではご利用いただけません。" });
     } catch (error) {
       console.error('YouTube transcription error:', error);
-      setYoutubeError("Failed to transcribe video. Please see details below.");
-    } finally {
+      setYoutubeError("Failed to transcribe video. Please try again.");
+    } finally {  
       setIsTranscribingYouTube(false);
     }
   };
@@ -443,17 +598,17 @@ export default function Home() {
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-[#e5e7eb] shadow-lg'
         }`}>
           <h2 className={`text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeYouTube}</h2>
-          <div className="w-full flex justify-center">
-            <a
-              href="https://www.youtube.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`text-blue-600 hover:underline text-md font-medium ${isDarkMode ? 'dark:text-green-600' : ''}`}
-            >
-              https://www.youtube.com/
-            </a>
-          </div>
           <div className="flex flex-col items-center justify-center w-full">
+            <div className="w-full flex justify-center">
+              <a
+                href="https://www.youtube.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`text-blue-600 hover:underline text-md font-medium ${isDarkMode ? 'dark:text-green-600' : ''}`}
+              >
+                https://www.youtube.com/
+              </a>
+            </div>
             <div className="text-center w-full">
               <input
                 ref={urlInputRef}
@@ -466,11 +621,61 @@ export default function Home() {
                 }`}
                 onChange={() => setYoutubeError("")}
               />
-            <p
-              className={`mt-2 text-xs ${youtubeError ? "text-red-500" : "invisible"}`}
-            >
-              {youtubeError || "placeholder"}
-            </p>
+              <p
+                className={`mt-2 text-xs ${youtubeError ? "text-red-500" : "invisible"}`}
+              >
+                {youtubeError || "placeholder"}
+              </p>
+            </div>
+          </div>
+          {/* Language Dropdown */}
+          <div className="flex flex-col items-center w-full mt-2">
+            <div className="flex items-center gap-2 mb-1">
+              <label className="text-sm font-semibold">{t.outputLanguage}</label>
+              <div className="relative group">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold cursor-help ${
+                  isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  ?
+                </div>
+                <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 leading-tight whitespace-nowrap ${
+                  isDarkMode ? 'bg-gray-800 text-gray-200 border border-gray-600' : 'bg-gray-100 text-black border border-gray-300'
+                }`}>
+                  Note: Please select a language that captions are available <br />in for the video. Otherwise, the default language will be used.
+                  <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
+                    isDarkMode ? 'border-t-gray-800' : 'border-t-gray-100'
+                  }`}></div>
+                </div>
+              </div>
+            </div>
+            <div className="relative w-full max-w-md" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+              >
+                <span>{youtubeLanguages.find(lang => lang.code === youtubeLanguage)?.name || 'English'}</span>
+                <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isDropdownOpen && (
+                <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 overflow-y-auto ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
+                  {youtubeLanguages.map((language) => (
+                    <button
+                      key={language.code}
+                      type="button"
+                      onClick={() => {
+                        setYoutubeLanguage(language.code);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${youtubeLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
+                    >
+                      {language.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
