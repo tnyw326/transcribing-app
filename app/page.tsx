@@ -516,7 +516,7 @@ export default function Home() {
         )}
       </div>
       {/* Original | Summary Toggle - Show when transcription is complete OR for demo */}
-      {(transcriptionOriginal || transcriptionSummary || !selectedFile) && (
+      {(transcriptionOriginal || transcriptionSummary || !isVideoUploaded) && (
         <div className={`w-full max-w-7xl mx-auto flex flex-row justify-end items-center mt-1`}>
           {/* Original | Summary Toggle */}
           <div className="flex items-center gap-1 mr-8">
