@@ -104,6 +104,7 @@ export default function Home() {
   const [youtubeError, setYoutubeError] = useState("");
   const [youtubeLanguage, setYoutubeLanguage] = useState("en");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -111,6 +112,7 @@ export default function Home() {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+        setSearchTerm("");
       }
     }
 
@@ -641,7 +643,7 @@ export default function Home() {
                 <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 leading-tight whitespace-nowrap ${
                   isDarkMode ? 'bg-gray-800 text-gray-200 border border-gray-600' : 'bg-gray-100 text-black border border-gray-300'
                 }`}>
-                  Note: Please select a language that captions are available <br />in for the video. Otherwise, the default language will be used.
+                  Note: Please select a language that captions are available <br />in for the video. Otherwise, the result will be in English <br />or the first available caption language for that video.
                   <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
                     isDarkMode ? 'border-t-gray-800' : 'border-t-gray-100'
                   }`}></div>
@@ -660,20 +662,42 @@ export default function Home() {
                 </svg>
               </button>
               {isDropdownOpen && (
-                <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 overflow-y-auto ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
-                  {youtubeLanguages.map((language) => (
-                    <button
-                      key={language.code}
-                      type="button"
-                      onClick={() => {
-                        setYoutubeLanguage(language.code);
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${youtubeLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
-                    >
-                      {language.name}
-                    </button>
-                  ))}
+                <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
+                  {/* Search Input */}
+                  <div className="sticky top-0 p-2 border-b border-gray-300 dark:border-gray-600 bg-inherit">
+                    <input
+                      type="text"
+                      placeholder="Search languages..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+                        isDarkMode ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
+                      }`}
+                      autoFocus
+                    />
+                  </div>
+                  {/* Filtered Languages */}
+                  <div className="overflow-y-auto max-h-36">
+                    {youtubeLanguages
+                      .filter((language) =>
+                        language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        language.code.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((language) => (
+                        <button
+                          key={language.code}
+                          type="button"
+                          onClick={() => {
+                            setYoutubeLanguage(language.code);
+                            setIsDropdownOpen(false);
+                            setSearchTerm("");
+                          }}
+                          className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${youtubeLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
+                        >
+                          {language.name}
+                        </button>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
