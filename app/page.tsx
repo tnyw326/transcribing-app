@@ -228,10 +228,11 @@ export default function Home() {
       const data = await response.json();
       const captions = data.content;
       const paragraph = captions.replace(/\n+/g, ' ');
+      
       setTranscriptionOriginal(paragraph);
-      setAllTranslations(paragraph);
-      setTranscriptionSummary(paragraph);
-      setAllSummaries(paragraph);
+      setAllTranslations({ en: paragraph, zh: "此功能目前不适用于 YouTube 视频。", ja: "この機能は現在 YouTube 動画ではご利用いただけません。" });
+      setTranscriptionSummary("This feature is currently not available for YouTube videos.");
+      setAllSummaries({ en: "This feature is currently not available for YouTube videos.", zh: "此功能目前不适用于 YouTube 视频。", ja: "この機能は現在 YouTube 動画ではご利用いただけません。" });
     } catch (error) {
       console.error('YouTube transcription error:', error);
       setYoutubeError("Failed to transcribe video. Please try again.");
