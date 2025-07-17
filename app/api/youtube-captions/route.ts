@@ -5,7 +5,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const url = searchParams.get('url');
   const text = searchParams.get('text');
-
+  const lang = searchParams.get('lang');
+  
   if (!url) {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });
   }
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
   const params = new URLSearchParams();
   params.set('url', url!);
   params.set('text', text ?? 'false');
+  params.set('lang', lang ?? 'en');
 
   const res = await fetch(
     `https://api.supadata.ai/v1/youtube/transcript?${params}`,
