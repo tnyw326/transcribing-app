@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from 'next/link';
 import fs from 'fs';
 import OpenAI from 'openai';
+import ReactMarkdown from 'react-markdown';
 
 // Translation object for English, Chinese, and Japanese
   const translations = {
@@ -106,6 +107,40 @@ export default function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [isUserVideo, setIsUserVideo] = useState(false);
+  const [isYouTubeVideo, setIsYouTubeVideo] = useState(false);
+  const [youtubeVideoId, setYoutubeVideoId] = useState('');
+  const [demoTranscriptionContent, setDemoTranscriptionContent] = useState<{[key: string]: string}>({});
+  const [demoSummaryContent, setDemoSummaryContent] = useState<{[key: string]: string}>({});
+  const [currentTime, setCurrentTime] = useState<string>("");
+  const [copyStatus, setCopyStatus] = useState<{[key: string]: string}>({});
+
+  // Sync dark mode with HTML class
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
+  // Set current time after component mounts to avoid hydration mismatch
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString());
+  }, []);
+
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyStatus(prev => ({ ...prev, [type]: 'Copied!' }));
+      setTimeout(() => {
+        setCopyStatus(prev => ({ ...prev, [type]: '' }));
+      }, 2000);
+    } catch (err) {
+      setCopyStatus(prev => ({ ...prev, [type]: 'Failed to copy' }));
+      setTimeout(() => {
+        setCopyStatus(prev => ({ ...prev, [type]: '' }));
+      }, 2000);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -120,6 +155,38 @@ export default function Home() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  // Fetch demo markdown content
+  useEffect(() => {
+    const fetchDemoContent = async () => {
+      try {
+        const languages = ['en', 'zh', 'ja'];
+        const transcriptionContent: {[key: string]: string} = {};
+        const summaryContent: {[key: string]: string} = {};
+
+        for (const lang of languages) {
+          // Fetch transcription demo content
+          const transcriptionResponse = await fetch(`/Demo/demo-transcription-${lang}.md`);
+          if (transcriptionResponse.ok) {
+            transcriptionContent[lang] = await transcriptionResponse.text();
+          }
+
+          // Fetch summary demo content
+          const summaryResponse = await fetch(`/Demo/demo-summary-${lang}.md`);
+          if (summaryResponse.ok) {
+            summaryContent[lang] = await summaryResponse.text();
+          }
+        }
+
+        setDemoTranscriptionContent(transcriptionContent);
+        setDemoSummaryContent(summaryContent);
+      } catch (error) {
+        console.error('Error fetching demo content:', error);
+      }
+    };
+
+    fetchDemoContent();
   }, []);
 
   // Comprehensive language list for YouTube transcription
@@ -295,6 +362,13 @@ export default function Home() {
     if (videoFile) {
       setSelectedFile(videoFile);
       setIsFileSelected(true);
+      setYoutubeError("");
+      setTranscriptionOriginal("");
+      setTranscriptionSummary("");
+      setAllTranslations({});
+      setAllSummaries({});
+      setIsUserVideo(true);
+      setIsYouTubeVideo(false);
     } else {
       alert(t.pleaseSelectValidVideo);
     }
@@ -310,6 +384,8 @@ export default function Home() {
       setTranscriptionSummary("");
       setAllTranslations({});
       setAllSummaries({});
+      setIsUserVideo(true);
+      setIsYouTubeVideo(false);
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
@@ -340,6 +416,8 @@ export default function Home() {
       formData.append('file', selectedFile);
       formData.append('inputLanguage', inputLanguage);
       formData.append('outputLanguage', outputLanguage);
+      formData.append('resultMode', resultMode);
+      formData.append('resultLang', resultLang);
 
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -351,15 +429,126 @@ export default function Home() {
       }
 
       const data = await response.json();
+      console.log('API Response data:', data);
+      console.log('Original content:', data.original);
       setTranscriptionOriginal(data.original);
-      setTranscriptionSummary(data.summary);
+      // Set the translation for the selected output language
       setAllTranslations(data.translations || {});
-      setAllSummaries(data.summaries || {});
     } catch (error) {
       console.error('Transcription error:', error);
       alert('Transcription failed. Please try again.');
     } finally {
       setIsTranscribingVideo(false);
+    }
+  };
+
+  const handleSummary = async () => {
+    if (!selectedFile) return;
+    
+    if (!transcriptionOriginal) {
+      alert("Please transcribe the video first before generating a summary.");
+      return;
+    }
+
+    // Check if summary already exists for the current output language
+    const existingSummary = allSummaries[outputLanguage] || transcriptionSummary;
+    if (existingSummary) {
+      // If summary exists, just switch to summary mode without calling API
+      setResultMode("summary");
+      return;
+    }
+
+    setIsSummaryLoading(true);
+    setIsTranscribingVideo(true);
+    setTranscriptionSummary("");
+    setAllSummaries({});
+
+    try {
+      // For user uploaded videos, use the new summary API
+      if (!selectedFile) {
+        throw new Error('No file selected');
+      }
+      
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('inputLanguage', inputLanguage);
+      formData.append('outputLanguage', outputLanguage);
+      formData.append('resultMode', resultMode);
+      formData.append('resultLang', resultLang);
+      formData.append('transcriptionText', transcriptionOriginal);
+
+      const response = await fetch('/api/summary', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Summary generation failed');
+      }
+
+      const data = await response.json();
+      setTranscriptionSummary(data.summary);
+      // Set the summary for the selected output language
+      setAllSummaries(data.summaries || {});
+    } catch (error) {
+      console.error('Summary error:', error);
+      alert('Summary generation failed. Please try again.');
+    } finally {
+      setIsTranscribingVideo(false);
+      setIsSummaryLoading(false);
+    }
+  };
+
+  const handleSummaryYouTube = async () => {
+    if (!isYouTubeVideo) return;
+    
+    if (!transcriptionOriginal) {
+      alert("Please transcribe the video first before generating a summary.");
+      return;
+    }
+
+    // Check if summary already exists for the current output language
+    const existingSummary = allSummaries[outputLanguage] || transcriptionSummary;
+    if (existingSummary && existingSummary.trim() !== "") {
+      // If summary exists, just switch to summary mode without calling API
+      setResultMode("summary");
+      return;
+    }
+
+    setIsSummaryLoading(true);
+    setIsTranscribingVideo(true);
+    setTranscriptionSummary("");
+    setAllSummaries({});
+
+    try {
+      // For YouTube videos, use the same summary API as user videos
+      const formData = new FormData();
+      formData.append('file', new File([], 'youtube-video')); // Dummy file for YouTube
+      formData.append('inputLanguage', youtubeLanguage);
+      formData.append('outputLanguage', outputLanguage);
+      formData.append('resultMode', resultMode);
+      formData.append('resultLang', resultLang);
+      formData.append('transcriptionText', transcriptionOriginal);
+
+      const response = await fetch('/api/summary', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Summary generation failed');
+      }
+
+      const data = await response.json();
+      setTranscriptionSummary(data.summary);
+      // Set the summary for the selected output language
+      setAllSummaries(data.summaries || {});
+    } catch (error) {
+      console.error('Summary error:', error);
+      alert('Summary generation failed. Please try again.');
+    } finally {
+      setIsTranscribingVideo(false);
+      setIsSummaryLoading(false);
     }
   };
 
@@ -377,23 +566,67 @@ export default function Home() {
       return;
     }
     
+    // Extract video ID
+    const match = url.match(YOUTUBE_VIDEO_REGEX);
+    const videoId = match ? match[1] : '';
+    setYoutubeVideoId(videoId);
+    
     setIsFileSelected(false);
     setSelectedFile(null);
     setYoutubeError("");
     setIsTranscribingYouTube(true);
-    // setIsFileSelected(false);
-    // setSelectedFile(null);
+    setIsYouTubeVideo(true);
+    setIsUserVideo(false);
+    
+    // Clear previous results
+    setTranscriptionOriginal("");
+    setTranscriptionSummary("");
+    setAllTranslations({});
+    setAllSummaries({});
     
     try {
       const response = await fetch(`/api/youtube-captions?url=${url}&text=true&lang=${youtubeLanguage}`);
       const data = await response.json();
       const captions = (data.content || data.details || data.message);
-      const paragraph = captions.replace(/\n+/g, ' ');
       
-      setTranscriptionOriginal(paragraph);
-      setAllTranslations({ en: paragraph, zh: "此功能目前不适用于 YouTube 视频。", ja: "この機能は現在 YouTube 動画ではご利用いただけません。" });
-      setTranscriptionSummary("This feature is currently not available for YouTube videos.");
-      setAllSummaries({ en: "This feature is currently not available for YouTube videos.", zh: "此功能目前不适用于 YouTube 视频。", ja: "この機能は現在 YouTube 動画ではご利用いただけません。" });
+      // Format the captions using GPT
+      const formatResponse = await fetch('/api/format', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: captions,
+          language: youtubeLanguage,
+          type: 'youtube-captions'
+        }),
+      });
+      
+      if (formatResponse.ok) {
+        const formattedData = await formatResponse.json();
+        const formattedCaptions = formattedData.formattedText;
+        
+        setTranscriptionOriginal(formattedCaptions);
+        
+        // Set translation for the current output language
+        const translations = { 
+          [outputLanguage]: formattedCaptions
+        };
+        setAllTranslations(translations);
+      } else {
+        // Fallback to original captions if formatting fails
+        const paragraph = captions.replace(/\n+/g, ' ');
+        setTranscriptionOriginal(paragraph);
+        
+        const translations = { 
+          [outputLanguage]: paragraph
+        };
+        setAllTranslations(translations);
+      }
+      
+      // Don't set any summaries - let the summary button generate them
+      setTranscriptionSummary("");
+      setAllSummaries({});
     } catch (error) {
       console.error('YouTube transcription error:', error);
       setYoutubeError("Failed to transcribe video. Please try again.");
@@ -483,7 +716,7 @@ export default function Home() {
       <div className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-5 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full ${isVideoUploaded ? 'lg:w-1/3' : 'lg:w-1/2'} lg:h-[485px] h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} lg:h-[485px] h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
             isDragOver
               ? isDarkMode 
                 ? 'border-blue-400 bg-blue-900/20' 
@@ -568,18 +801,22 @@ export default function Home() {
             <div className="flex-1"></div>
             <button
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
-              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${
+              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-2 ${
                 selectedFile
                   ? 'bg-[#22c55e] hover:bg-[#16a34a]'
                   : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
-              } ${isTranscribingVideo ? 'animate-pulse' : ''}`}
+              } ${isTranscribingVideo ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
               disabled={isTranscribingVideo}
             >
               {isTranscribingVideo && (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <div className="relative">
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {/* Ripple effect */}
+                  <div className="absolute inset-0 rounded-full bg-white/20 animate-ping"></div>
+                </div>
               )}
               {isTranscribingVideo ? t.transcribing : selectedFile ? t.transcribe : t.upload}
             </button>
@@ -596,7 +833,7 @@ export default function Home() {
           </div>
         </div>
         {/* YouTube Card */}
-        <div className={`flex flex-col items-center w-full ${isVideoUploaded ? 'lg:w-1/3' : 'lg:w-1/2'} h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
+        <div className={`flex flex-col items-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-[#e5e7eb] shadow-lg'
         }`}>
           <h2 className={`text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeYouTube}</h2>
@@ -630,76 +867,75 @@ export default function Home() {
               </p>
             </div>
           </div>
-          {/* Language Dropdown */}
-          <div className="flex flex-col items-center w-full mt-2">
-            <div className="flex items-center gap-2 mb-1">
-              <label className="text-sm font-semibold">{t.outputLanguage}</label>
-              <div className="relative group">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold cursor-help ${
-                  isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  ?
-                </div>
-                <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 leading-tight whitespace-nowrap ${
-                  isDarkMode ? 'bg-gray-800 text-gray-200 border border-gray-600' : 'bg-gray-100 text-black border border-gray-300'
-                }`}>
-                  Note: Please select a language that captions are available <br />in for the video. Otherwise, the result will be in English <br />or the first available caption language for that video.
-                  <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
-                    isDarkMode ? 'border-t-gray-800' : 'border-t-gray-100'
-                  }`}></div>
-                </div>
+          {/* Language Selectors */}
+          <div className="flex flex-row mb-4 w-full items-center gap-4">
+            {/* Input Language Selector */}
+            <div className="flex flex-col w-full items-center">
+              <label className="text-sm font-semibold mb-1">{t.inputLanguage}</label>
+              <div className="relative w-full max-w-md" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+                >
+                  <span>{youtubeLanguages.find(lang => lang.code === youtubeLanguage)?.name || 'English'}</span>
+                  <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isDropdownOpen && (
+                  <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
+                    {/* Search Input */}
+                    <div className="sticky top-0 p-2 border-b border-gray-300 dark:border-gray-600 bg-inherit">
+                      <input
+                        type="text"
+                        placeholder="Search languages..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+                          isDarkMode ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
+                        }`}
+                        autoFocus
+                      />
+                    </div>
+                    {/* Filtered Languages */}
+                    <div className="overflow-y-auto max-h-36">
+                      {youtubeLanguages
+                        .filter((language) =>
+                          language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          language.code.toLowerCase().includes(searchTerm.toLowerCase())
+                        )
+                        .map((language) => (
+                          <button
+                            key={language.code}
+                            type="button"
+                            onClick={() => {
+                              setYoutubeLanguage(language.code);
+                              setIsDropdownOpen(false);
+                              setSearchTerm("");
+                            }}
+                            className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${youtubeLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
+                          >
+                            {language.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="relative w-full max-w-md" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+            {/* Output Language Selector */}
+            <div className="flex flex-col w-full items-center">
+              <label className="text-sm font-semibold mb-1">{t.outputLanguage}</label>
+              <select
+                value={outputLanguage}
+                onChange={e => setOutputLanguage(e.target.value)}
+                className={`rounded-lg p-3 border w-full max-w-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
               >
-                <span>{youtubeLanguages.find(lang => lang.code === youtubeLanguage)?.name || 'English'}</span>
-                <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isDropdownOpen && (
-                <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
-                  {/* Search Input */}
-                  <div className="sticky top-0 p-2 border-b border-gray-300 dark:border-gray-600 bg-inherit">
-                    <input
-                      type="text"
-                      placeholder="Search languages..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
-                        isDarkMode ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
-                      }`}
-                      autoFocus
-                    />
-                  </div>
-                  {/* Filtered Languages */}
-                  <div className="overflow-y-auto max-h-36">
-                    {youtubeLanguages
-                      .filter((language) =>
-                        language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        language.code.toLowerCase().includes(searchTerm.toLowerCase())
-                      )
-                      .map((language) => (
-                        <button
-                          key={language.code}
-                          type="button"
-                          onClick={() => {
-                            setYoutubeLanguage(language.code);
-                            setIsDropdownOpen(false);
-                            setSearchTerm("");
-                          }}
-                          className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${youtubeLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
-                        >
-                          {language.name}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )}
+                <option value="en">English</option>
+                <option value="zh">Chinese</option>
+                <option value="ja">Japanese</option>
+              </select>
             </div>
           </div>
           
@@ -724,11 +960,14 @@ export default function Home() {
             <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.pasteYouTubeDescription}</p>
           </div>
         </div>
-        {/* Video Preview Card - Appears after file upload */}
-        {isVideoUploaded && (
+
+        {/* Video Preview Card - Appears after file upload or YouTube video */}
+        {(isVideoUploaded || isYouTubeVideo) && (
           <div className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
             isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-[#e5e7eb] shadow-lg'
           }`}>
+          {/* User Video */}
+          {isUserVideo && selectedFile && (
             <div className="flex flex-col items-center justify-center gap-5 w-full">
               <h2 className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>Video Preview</h2>
               <div className="w-full">
@@ -745,90 +984,232 @@ export default function Home() {
                 <p className="text-sm text-gray-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             </div>
+          )}
+          {/* YouTube Video */}
+          {isYouTubeVideo && (
+            <div className="flex flex-col items-center justify-center gap-5 w-full">
+              <h2 className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>YouTube Video</h2>
+              <div className="w-full">
+                {youtubeVideoId ? (
+                  <div className={`rounded-xl shadow-lg max-h-64 w-auto border mx-auto block overflow-hidden ${
+                    isDarkMode ? 'border-gray-600' : 'border-gray-300'
+                  }`}>
+                    <iframe
+                      width="100%"
+                      height="240"
+                      src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="rounded-xl"
+                    ></iframe>
+                  </div>
+                ) : (
+                  <div className={`rounded-xl shadow-lg max-h-64 w-auto border mx-auto block p-4 ${
+                    isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-300 bg-gray-50'
+                  }`}>
+                    <div className="flex items-center justify-center mb-3">
+                      <svg className="w-8 h-8 text-red-500 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                      <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>YouTube Video</span>
+                    </div>
+                    <div className="text-center">
+                      <p className={`text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {urlInputRef.current?.value || 'YouTube Video'}
+                      </p>
+                      <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                        Language: {youtubeLanguages.find(lang => lang.code === youtubeLanguage)?.name || 'English'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           </div>
         )}
       </div>
       {/* Original | Summary Toggle - Show when transcription is complete OR for demo */}
-      {(transcriptionOriginal || transcriptionSummary || !isVideoUploaded) && (
-        <div className={`w-full max-w-7xl mx-auto flex flex-row justify-end items-center mt-1`}>
-          {/* Original | Summary Toggle */}
+      {(transcriptionOriginal || transcriptionSummary || !isVideoUploaded || isYouTubeVideo) && (
+        <div className="w-full max-w-7xl mx-auto flex flex-row justify-end items-center mt-1">
           <div className="flex items-center gap-1 mr-8">
-            <button
-              className={`px-6 py-3 rounded-l-xl border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultMode === "original" 
-                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
-                  : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
-              }`}
-              onClick={() => setResultMode("original")}
-            >
-              {t.original}
-            </button>
-            <button
-              className={`px-6 py-3 rounded-r-xl border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultMode === "summary" 
-                  ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
-                  : (isDarkMode ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]")
-              }`}
-              onClick={() => setResultMode("summary")}
-            >
-              {t.summary}
-            </button>
+            {[
+              { mode: "original", label: t.original, isFirst: true },
+              { mode: "summary", label: t.summary, isFirst: false }
+            ].map(({ mode, label, isFirst }) => (
+              <button
+                key={mode}
+                className={
+                  `px-6 py-3 border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg
+                  ${isFirst ? 'rounded-l-xl' : 'rounded-r-xl border-l-0'}
+                  ${resultMode === mode && mode === "original"
+                    ? 'bg-blue-400 text-white border-blue-400 shadow-blue-400/25'
+                    : resultMode === mode && mode === "summary"
+                    ? 'bg-green-400 text-white border-green-400 shadow-green-400/25'
+                    : isDarkMode 
+                      ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                      : 'bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]'
+                  }`
+                }
+                onClick={() => {
+                  setResultMode(mode as "original" | "summary");
+                  if (mode === "summary") {
+                    if (isYouTubeVideo) {
+                      handleSummaryYouTube();
+                    } else {
+                      handleSummary();
+                    }
+                  }
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </div>    
         </div>
       )}
       {/* Transcription Result */}
       {resultMode === "original" && (
         <div className={`w-full max-w-7xl mx-auto`}>
-          <div className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
+          <div className={`p-8 rounded-3xl shadow-2xl border-2 transition-all duration-500 backdrop-blur-sm ${
             isDarkMode 
-              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 text-white shadow-gray-900/50' 
-              : 'bg-gradient-to-br from-white to-[#f7f9fb] border-[#e5e7eb] text-[#222] shadow-[#e5e7eb]/50'
+              ? 'bg-gradient-to-br from-gray-800/95 via-gray-800/90 to-gray-900/95 border-gray-600/50 text-white shadow-gray-900/30' 
+              : 'bg-gradient-to-br from-white/95 via-white/90 to-[#f7f9fb]/95 border-[#e5e7eb]/50 text-[#222] shadow-[#e5e7eb]/30'
           }`}>
-            {/* Header with icon */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'}`}> 
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-2xl">{t.transcriptionOriginal}</h3>
-            </div>
-            
-            {/* Content */}
-            <div className={`p-6 rounded-2xl ${
-              isDarkMode ? 'bg-gray-700/50' : 'bg-[#f1f5f9]'
+            {/* Header with icon and gradient background */}
+            <div className={`flex items-center justify-between mb-8 p-4 rounded-2xl ${
+              isDarkMode 
+                ? 'bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20' 
+                : 'bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50'
             }`}>
-              <div className="prose prose-lg max-w-none">
-                <p className={`text-lg leading-relaxed whitespace-pre-wrap ${
-                  isDarkMode ? 'text-gray-100' : 'text-[#374151]'
-                }`}>
-                  {transcriptionOriginal
-                    ? (allTranslations[resultLang] || transcriptionOriginal)
-                    : (resultLang === "en"
-                        ? "This is a demo transcription result. Upload a video file to see the actual transcription of your content. The transcription will appear here with proper formatting and structure."
-                        : resultLang === "zh"
-                        ? "这是一个演示转录结果。上传视频文件以查看您内容的实际转录。转录将在此处显示，具有适当的格式和结构。"
-                        : "これはデモの文字起こし結果です。ビデオファイルをアップロードして、コンテンツの実際の文字起こしを確認してください。文字起こしは適切なフォーマットと構造でここに表示されます。"
-                      )
-                  }
-                </p>
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} shadow-lg`}> 
+                  <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-3xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    {t.transcriptionOriginal}
+                  </h3>
+                  <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Full transcription with markdown formatting
+                  </p>
+                </div>
               </div>
+              {/* Copy Button */}
+              <button
+                onClick={() => copyToClipboard(
+                  transcriptionOriginal
+                    ? (allTranslations[resultLang] || transcriptionOriginal)
+                    : (demoTranscriptionContent[selectedLanguage] || demoTranscriptionContent['en'] || ''),
+                  'original'
+                )}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
+                  isDarkMode 
+                    ? 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30' 
+                    : 'bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300/50'
+                }`}
+              >
+                {copyStatus['original'] ? (
+                  <>
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-green-500">{copyStatus['original']}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
             </div>
             
-            {/* Footer with metadata */}
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-300/30">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {/* <span>Generated at {new Date().toLocaleTimeString()}</span> */}
+            {/* Content with enhanced styling */}
+            <div className={`markdown-body text-left p-6 rounded-2xl ${
+              isDarkMode 
+                ? 'bg-gray-800/50 border border-gray-700/50' 
+                : 'bg-gray-50/50 border border-gray-200/50'
+            } shadow-inner`}>
+              <ReactMarkdown
+                components={{
+                  h1: ({children}) => <h1 className="text-2xl font-semibold mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
+                  p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+                  strong: ({children}) => <strong className="font-semibold text-blue-600 dark:text-blue-400">{children}</strong>,
+                  em: ({children}) => <em className="italic text-blue-500 dark:text-blue-300">{children}</em>,
+                  ul: ({children}) => <ul className="list-disc list-inside mb-3 space-y-1 ml-4">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal list-inside mb-3 space-y-1 ml-4">{children}</ol>,
+                  li: ({children}) => <li className="mb-1">{children}</li>,
+                  blockquote: ({children}) => (
+                    <blockquote className={`border-l-3 pl-3 py-2 my-3 italic ${
+                      isDarkMode 
+                        ? 'border-blue-400 bg-blue-900/10' 
+                        : 'border-blue-400 bg-blue-50/50'
+                    }`}>
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({children}) => (
+                    <code className={`px-2 py-1 rounded text-sm font-mono ${
+                      isDarkMode 
+                        ? 'bg-gray-700 text-blue-300' 
+                        : 'bg-gray-100 text-blue-700'
+                    }`}>
+                      {children}
+                    </code>
+                  ),
+                }}
+              >
+                {(() => {
+                  const content = transcriptionOriginal
+                    ? (allTranslations[resultLang] || transcriptionOriginal)
+                    : (demoTranscriptionContent[selectedLanguage] ||
+                       demoTranscriptionContent['en'] ||
+                       "# Loading...");
+                  console.log('ReactMarkdown content:', content);
+                  console.log('Content type:', typeof content);
+                  console.log('Content length:', content?.length);
+                  console.log('First 200 chars:', content?.substring(0, 200));
+                  return content;
+                })()}
+              </ReactMarkdown>
+            </div>
+            
+            {/* Enhanced footer with metadata */}
+            <div className={`flex items-center justify-between mt-8 pt-6 border-t ${
+              isDarkMode ? 'border-gray-600/30' : 'border-gray-300/30'
+            }`}>
+              <div className="flex items-center gap-3 text-sm">
+                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {currentTime ? `Generated at ${currentTime}` : "Generated"}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  isDarkMode ? 'bg-blue-600/20 text-blue-300' : 'bg-[#e8f0fe] text-[#2563eb]'
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-lg ${
+                  isDarkMode 
+                    ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 border border-blue-500/30' 
+                    : 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border border-blue-300/50'
                 }`}>
                   {resultLang.toUpperCase()}
                 </span>
+                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
@@ -836,56 +1217,187 @@ export default function Home() {
       )}
       {resultMode === "summary" && (
         <div className={`w-full max-w-7xl mx-auto`}>
-          <div className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
+          <div className={`p-8 rounded-3xl shadow-2xl border-2 transition-all duration-500 backdrop-blur-sm ${
             isDarkMode 
-              ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 text-white shadow-gray-900/50' 
-              : 'bg-gradient-to-br from-white to-[#f7f9fb] border-[#e5e7eb] text-[#222] shadow-[#e5e7eb]/50'
+              ? 'bg-gradient-to-br from-gray-800/95 via-gray-800/90 to-gray-900/95 border-gray-600/50 text-white shadow-gray-900/30' 
+              : 'bg-gradient-to-br from-white/95 via-white/90 to-[#f7f9fb]/95 border-[#e5e7eb]/50 text-[#222] shadow-[#e5e7eb]/30'
           }`}>
-            {/* Header with icon */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
-                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-2xl">{t.transcriptionSummary}</h3>
-            </div>
-            
-            {/* Content */}
-            <div className={`p-6 rounded-2xl ${
-              isDarkMode ? 'bg-gray-700/50' : 'bg-[#f1f5f9]'
+            {/* Header with icon and gradient background */}
+            <div className={`flex items-center justify-between mb-8 p-4 rounded-2xl ${
+              isDarkMode 
+                ? 'bg-gradient-to-r from-green-600/10 to-emerald-600/10 border border-green-500/20' 
+                : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
             }`}>
-              <div className="prose prose-lg max-w-none">
-                <div className={`text-lg leading-relaxed whitespace-pre-wrap ${
-                  isDarkMode ? 'text-gray-100' : 'text-[#374151]'
-                }`}>
-                  {(allSummaries[resultLang] || transcriptionSummary)
-                    ? (allSummaries[resultLang] || transcriptionSummary)
-                    : (resultLang === "en" 
-                        ? "This is a demo summary result. Upload a video file to see the actual summary of your content. The summary will provide a concise overview of the main points and key information from your video."
-                        : resultLang === "zh"
-                        ? "这是一个演示总结结果。上传视频文件以查看您内容的实际总结。总结将提供视频中要点和关键信息的简明概述。"
-                        : "これはデモの要約結果です。ビデオファイルをアップロードして、コンテンツの実際の要約を確認してください。要約は、ビデオの要点と重要な情報の簡潔な概要を提供します。"
-                      )
-                  }
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'} shadow-lg`}>
+                  <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-3xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    {t.transcriptionSummary}
+                  </h3>
+                  <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    AI-powered content summary with key insights
+                  </p>
                 </div>
               </div>
+              {/* Copy Button */}
+              <button
+                onClick={() => copyToClipboard(
+                  allSummaries[resultLang] ||
+                  transcriptionSummary ||
+                  demoSummaryContent[selectedLanguage] ||
+                  demoSummaryContent['en'] ||
+                  '',
+                  'summary'
+                )}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
+                  isDarkMode 
+                    ? 'bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/30' 
+                    : 'bg-green-100 hover:bg-green-200 text-green-700 border border-green-300/50'
+                }`}
+              >
+                {copyStatus['summary'] ? (
+                  <>
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-green-500">{copyStatus['summary']}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
             </div>
             
-            {/* Footer with metadata */}
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-300/30">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Generated at {new Date().toLocaleTimeString()}</span>
+            {/* Content with enhanced styling */}
+            <div className={`markdown-body text-left p-6 rounded-2xl ${
+              isDarkMode 
+                ? 'bg-gray-800/50 border border-gray-700/50' 
+                : 'bg-gray-50/50 border border-gray-200/50'
+            } shadow-inner`}>
+              <ReactMarkdown
+                components={{
+                  h1: ({children}) => <h1 className="text-2xl font-semibold mb-3 text-green-600 dark:text-green-400">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-xl font-semibold mb-2 text-green-500 dark:text-green-300">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-lg font-semibold mb-2 text-green-400 dark:text-green-200">{children}</h3>,
+                  p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+                  strong: ({children}) => <strong className="font-semibold text-green-600 dark:text-green-400">{children}</strong>,
+                  em: ({children}) => <em className="italic text-green-500 dark:text-green-300">{children}</em>,
+                  ul: ({children}) => <ul className="list-disc list-inside mb-3 space-y-1 ml-4">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal list-inside mb-3 space-y-1 ml-4">{children}</ol>,
+                  li: ({children}) => <li className="mb-1">{children}</li>,
+                  blockquote: ({children}) => (
+                    <blockquote className={`border-l-3 pl-3 py-2 my-3 italic ${
+                      isDarkMode 
+                        ? 'border-green-400 bg-green-900/10' 
+                        : 'border-green-400 bg-green-50/50'
+                    }`}>
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({children}) => (
+                    <code className={`px-2 py-1 rounded text-sm font-mono ${
+                      isDarkMode 
+                        ? 'bg-gray-700 text-green-300' 
+                        : 'bg-gray-100 text-green-700'
+                    }`}>
+                      {children}
+                    </code>
+                  ),
+                }}
+              >
+                {(() => {
+                  const content = allSummaries[resultLang] ||
+                    transcriptionSummary ||
+                    demoSummaryContent[selectedLanguage] ||
+                    demoSummaryContent['en'] ||
+                    "# Loading...";
+                  console.log('ReactMarkdown summary content:', content);
+                  return content;
+                })()}
+              </ReactMarkdown>
+            </div>
+            
+            {/* Enhanced footer with metadata */}
+            <div className={`flex items-center justify-between mt-8 pt-6 border-t ${
+              isDarkMode ? 'border-gray-600/30' : 'border-gray-300/30'
+            }`}>
+              <div className="flex items-center gap-3 text-sm">
+                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {currentTime ? `Generated at ${currentTime}` : "Generated"}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  isDarkMode ? 'bg-green-600/20 text-green-300' : 'bg-[#e7fbe9] text-[#22c55e]'
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-lg ${
+                  isDarkMode 
+                    ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-300 border border-green-500/30' 
+                    : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300/50'
                 }`}>
                   {resultLang.toUpperCase()}
                 </span>
+                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading Modal for Summary */}
+      {isSummaryLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+          <div className={`p-8 rounded-2xl shadow-2xl border-2 max-w-md w-full mx-4 backdrop-blur-sm ${
+            isDarkMode 
+              ? 'bg-gray-800/90 border-gray-600 text-white' 
+              : 'bg-white/90 border-gray-300 text-gray-800'
+          }`}>
+            <div className="flex flex-col items-center gap-4">
+              {/* Circular Loading Animation */}
+              <div className="relative">
+                <div className={`w-16 h-16 border-4 rounded-full ${
+                  isDarkMode ? 'border-gray-600' : 'border-gray-200'
+                }`}></div>
+                <div className="absolute top-0 left-0 w-16 h-16 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+              </div>
+              
+              {/* Loading Text */}
+              <div className="text-center">
+                <h3 className="text-xl font-bold mb-2">Generating Summary</h3>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {isYouTubeVideo 
+                    ? "Please wait while we analyze your YouTube video content..."
+                    : "Please wait while we analyze your content..."
+                  }
+                </p>
+              </div>
+              
+              {/* Progress Dots */}
+              <div className="flex gap-1">
+                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                  isDarkMode ? 'bg-blue-400' : 'bg-blue-500'
+                }`} style={{ animationDelay: '0ms' }}></div>
+                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                  isDarkMode ? 'bg-blue-400' : 'bg-blue-500'
+                }`} style={{ animationDelay: '150ms' }}></div>
+                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                  isDarkMode ? 'bg-blue-400' : 'bg-blue-500'
+                }`} style={{ animationDelay: '300ms' }}></div>
               </div>
             </div>
           </div>

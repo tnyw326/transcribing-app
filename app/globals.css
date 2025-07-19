@@ -17,3 +17,113 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.markdown-body h2 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.markdown-body ul {
+  padding-left: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-body blockquote {
+  font-style: italic;
+  color: #999;
+  border-left: 3px solid #444;
+  padding-left: 1rem;
+  margin-left: 0;
+}
+
+/* Simplified Markdown Body Styles */
+.markdown-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  line-height: 1.6;
+  color: inherit;
+  word-wrap: break-word;
+}
+
+/* Headers - Simplified */
+.markdown-body h1 {
+  font-size: 1.6em;
+  font-weight: 600;
+  margin-top: 16px;
+  margin-bottom: 10px;
+  color: inherit;
+}
+
+.markdown-body h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  color: inherit;
+}
+
+.markdown-body h3 {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  color: inherit;
+}
+
+/* Paragraphs */
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+/* Lists - Simplified */
+.markdown-body ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  padding-left: 1.5em;
+}
+
+.markdown-body li {
+  margin-bottom: 0.2em;
+}
+
+/* Code - Simplified */
+.markdown-body code {
+  padding: 2px 4px;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* Emphasis */
+.markdown-body strong {
+  font-weight: 600;
+}
+
+.markdown-body em {
+  font-style: italic;
+}
+
+/* Links */
+.markdown-body a {
+  color: inherit;
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.markdown-body a:hover {
+  opacity: 1;
+}
+
+/* Dark mode overrides - Simplified */
+.dark .markdown-body code {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .markdown-body a {
+  color: inherit;
+}
+
