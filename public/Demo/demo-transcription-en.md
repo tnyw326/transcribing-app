@@ -5,7 +5,7 @@
 - **Option B:** Paste a YouTube link directly to transcribe its audio
 - Select **input** and **output** languages
 
-## 2. Transcribe Your Content  
+## 2. Transcribe Your Content
 - Click the **Transcribe** button
 - The app performs **real-time transcription** with progress feedback
 
@@ -20,6 +20,16 @@
 > “Hello everyone, welcome to today’s presentation.  
 > We’ll be discussing **important topics** and *key concepts* that you need to understand.”
 
+### Quick View Toggle Example
+
+**Formatted:**  
+Depth‑first search explores one branch completely before backtracking.  
+
+This second paragraph is separated for easier reading.
+
+**Unformatted:**  
+Depth‑first search explores one branch completely before backtracking. This second paragraph is separated for easier reading.
+
 ---
 
 ## ✨ Features
@@ -29,6 +39,7 @@
 - 🌐 **Supports over 200 languages** for both input and output
 - 📁 **Compatible with many formats**: `.mp4`, `.mov`, `.avi`, `.mkv`, and more
 - 🔗 **YouTube link support** — no need to download first!
+- 🆕 **Formatted / Unformatted toggle** for structured vs plain text
 
 ---
 

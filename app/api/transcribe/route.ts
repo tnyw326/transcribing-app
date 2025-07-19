@@ -143,8 +143,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     const openaiFile = new File([buffer], file!.name, { type: file!.type });
 
-    let transcription = '';
+    let rawTranscription = '';
+    let formattedTranscription = '';
     let translations: { [key: string]: string } = {};
+    let unformattedTranslations: { [key: string]: string } = {};
     let apiResponses: any = {};
 
     console.log('Sending file to OpenAI for transcription...');
@@ -157,23 +159,27 @@ export async function POST(request: NextRequest) {
       response_format: "text",
     });
 
-    transcription = transcriptionResponse;
+    rawTranscription = transcriptionResponse;
     console.log('Transcription completed successfully');
 
     // Step 2: Format the original transcription
     console.log('Formatting transcription...');
-    const formattedTranscription = await formatTranscription(transcription, inputLanguage);
-    transcription = formattedTranscription;
+    formattedTranscription = await formatTranscription(rawTranscription, inputLanguage);
     console.log('Transcription formatting completed');
 
     // Translate if needed
     if (outputLanguage !== inputLanguage) {
-      console.log(`Translating to ${outputLanguage}...`);
-      translations[outputLanguage] = await translateText(transcription, inputLanguage, outputLanguage);
+      console.log(`Translating formatted text to ${outputLanguage}...`);
+      translations[outputLanguage] = await translateText(formattedTranscription, inputLanguage, outputLanguage);
+      
+      console.log(`Translating unformatted text to ${outputLanguage}...`);
+      unformattedTranslations[outputLanguage] = await translateText(rawTranscription, inputLanguage, outputLanguage);
+      
       apiResponses.translation = { [outputLanguage]: 'translated' };
       console.log(`Translation to ${outputLanguage} completed`);
     } else {
-      translations[outputLanguage] = transcription;
+      translations[outputLanguage] = formattedTranscription;
+      unformattedTranslations[outputLanguage] = rawTranscription;
     }
 
     apiResponses.whisper = transcriptionResponse;
@@ -184,13 +190,16 @@ export async function POST(request: NextRequest) {
     requestId = await logger.logTranscription(
       createLogTranscriptionData(
         file!.name, file!.size, inputLanguage, outputLanguage, resultMode, resultLang,
-        transcription, translations, apiResponses, processingTime, 'success'
+        formattedTranscription, translations, apiResponses, processingTime, 'success'
       )
     );
 
     return NextResponse.json({ 
       original: translations[outputLanguage],
+      formatted: translations[outputLanguage],
+      unformatted: unformattedTranslations[outputLanguage],
       translations: { [outputLanguage]: translations[outputLanguage] },
+      unformattedTranslations: { [outputLanguage]: unformattedTranslations[outputLanguage] },
       language: getWhisperLanguage(inputLanguage),
       requestId
     });

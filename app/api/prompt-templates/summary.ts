@@ -1,3 +1,5 @@
+import { getLanguageName } from '../utils/languageMap';
+
 interface SummaryPromptParams {
   transcript: string;
   resultMode: string;
@@ -12,10 +14,7 @@ export function createSummaryPrompt({
   videoTitle
 }: SummaryPromptParams): string {
   // Determine language
-  const language = resultLang === 'en' ? 'English' : 
-                   resultLang === 'ja' ? 'Japanese' : 
-                   resultLang === 'zh' ? 'Chinese' : 
-                   'the same language as the transcript';
+  const language = getLanguageName(resultLang);
 
   return `You are a helpful assistant that summarizes videos based on their transcript.
 

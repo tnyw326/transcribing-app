@@ -1,3 +1,5 @@
+import { getLanguageName } from '../utils/languageMap';
+
 interface TranslationPromptParams {
   text: string;
   sourceLanguage: string;
@@ -9,10 +11,7 @@ export function createTranslationPrompt({
   sourceLanguage,
   targetLanguage
 }: TranslationPromptParams): string {
-  const targetLanguageName = targetLanguage === 'en' ? 'English' : 
-                            targetLanguage === 'ja' ? 'Japanese' : 
-                            targetLanguage === 'zh' ? 'Chinese' : 
-                            targetLanguage;
+  const targetLanguageName = getLanguageName(targetLanguage);
 
   return `You are a professional translator and transcription editor. Translate the following text from ${sourceLanguage} to ${targetLanguage} and format it properly using **markdown formatting**.
 
