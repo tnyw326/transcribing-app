@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useTheme } from "../context/ThemeProvider";
 import { useLanguage } from "../context/LanguageProvider";
@@ -14,11 +15,20 @@ const languages = [
 export default function Navbar() {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { currentLanguage, setCurrentLanguage } = useLanguage();
+  const pathname = usePathname();
+
+  const navLinks = [
+    { label: "Home", href: "/" },
+    { label: "Log in", href: "/login" },
+    { label: "Subscription", href: "/subscription" },
+  ];
 
   return (
     <nav
-      className={`w-full dark:border-neutral-800 px-4 py-2 flex items-center justify-between ${
-        isDarkMode ? "bg-gray-900 text-white" : "bg-[#f7f9fb] text-[#222]"
+      className={`w-full px-4 py-2 flex items-center justify-between shadow-md border-b ${
+        isDarkMode
+          ? "bg-[#10172a] text-[#e0e7ef] border-[#223056]"
+          : "bg-white text-[#1a202c] border-[#e2e8f0]"
       }`}
     >
       <div className="flex items-center gap-2">
@@ -30,14 +40,32 @@ export default function Navbar() {
         </Link>
       </div>
       <div className="flex items-center gap-4">
+        {/* Navigation Links */}
+        {navLinks.map((link) => (
+          <Link
+            key={link.label}
+            href={link.href}
+            className={`px-3 py-1 rounded font-medium transition-colors duration-150 ${
+              pathname === link.href
+                ? isDarkMode
+                  ? "bg-[#223056] text-[#e0e7ef] opacity-100"
+                  : "bg-[#f0f5ff] text-[#1a202c] opacity-100"
+                : isDarkMode
+                ? "text-[#e0e7ef] opacity-80 hover:bg-[#223056]"
+                : "text-[#1a202c] opacity-80 hover:bg-[#f1f5ff]"
+            }`}
+          >
+            {link.label}
+          </Link>
+        ))}
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
-          className={`p-2 rounded-lg transition-colors duration-200 ${
+          className={`p-2 rounded-lg transition-colors duration-200 shadow ${
             isDarkMode
-              ? "bg-gray-700 text-yellow-300 hover:bg-gray-600"
-              : "bg-white text-gray-700 hover:bg-gray-100"
-          } shadow-lg`}
+              ? "bg-[#223056] text-yellow-300 hover:bg-[#1a233a] border border-[#2d3a5a]"
+              : "bg-[#f7fafc] text-[#1a202c] hover:bg-[#e2e8f0] border border-[#cbd5e1]"
+          }`}
           aria-label="Toggle dark mode"
         >
           {isDarkMode ? (
