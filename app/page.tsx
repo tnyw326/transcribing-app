@@ -533,7 +533,6 @@ export default function Home() {
     }
 
     setIsSummaryLoading(true);
-    setIsTranscribingVideo(true);
     setTranscriptionSummary("");
     setAllSummaries({});
 
@@ -568,7 +567,6 @@ export default function Home() {
       console.error('Summary error:', error);
       alert('Summary generation failed. Please try again.');
     } finally {
-      setIsTranscribingVideo(false);
       setIsSummaryLoading(false);
     }
   };
@@ -590,7 +588,6 @@ export default function Home() {
     }
 
     setIsSummaryLoading(true);
-    setIsTranscribingVideo(true);
     setTranscriptionSummary("");
     setAllSummaries({});
 
@@ -621,7 +618,6 @@ export default function Home() {
       console.error('Summary error:', error);
       alert('Summary generation failed. Please try again.');
     } finally {
-      setIsTranscribingVideo(false);
       setIsSummaryLoading(false);
     }
   };
