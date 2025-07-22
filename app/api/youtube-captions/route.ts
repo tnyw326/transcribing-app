@@ -8,6 +8,12 @@ const openai = new OpenAI({
 });
 
 export async function GET(req: NextRequest) {
+  // Check if request was aborted
+  if (req.signal?.aborted) {
+    console.log('🚫 YouTube captions request was aborted by client');
+    return new NextResponse('Request aborted', { status: 499 });
+  }
+  
   try {
   const { searchParams } = new URL(req.url);
   const url = searchParams.get('url');
@@ -37,6 +43,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Check if request was aborted
+  if (req.signal?.aborted) {
+    console.log('🚫 YouTube captions POST request was aborted by client');
+    return new NextResponse('Request aborted', { status: 499 });
+  }
+  
   try {
     const formData = await req.formData();
     const url = formData.get('url') as string;

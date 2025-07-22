@@ -20,6 +20,7 @@ ${text}
 """
 
 ## Formatting Requirements:
+- **If the transcription is all capital letters, convert it to proper case**
 - **Preserve all original content** - do not add, remove, or change any words
 - **Add paragraph breaks** where natural speech pauses occur or when the speaker changes topics
 - **Keep the content simple** - no headers, bold text, italics, or other markdown formatting

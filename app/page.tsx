@@ -5,6 +5,7 @@ import fs from 'fs';
 import OpenAI from 'openai';
 import ReactMarkdown from 'react-markdown';
 
+
 // Translation object for English, Chinese, and Japanese
   const translations = {
     en: {
@@ -38,7 +39,8 @@ import ReactMarkdown from 'react-markdown';
       generated: "Generated",
       en: "EN",
       zh: "CH",
-      ja: "JA"
+      ja: "JA",
+
     },
     zh: {
       title: "视频转换为文字",
@@ -71,7 +73,8 @@ import ReactMarkdown from 'react-markdown';
       generated: "生成",
       en: "英語",
       zh: "中文",
-      ja: "日语"
+      ja: "日语",
+
     },
     ja: {
       title: "動画をテキストに変換",
@@ -104,7 +107,8 @@ import ReactMarkdown from 'react-markdown';
       generated: "生成",
       en: "英語",
       zh: "中国語",
-      ja: "日本語"
+      ja: "日本語",
+
     }
   };
 
@@ -124,6 +128,9 @@ export default function Home() {
   const [allSummaries, setAllSummaries] = useState<{[key: string]: string}>({});
   const [isFormatted, setIsFormatted] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+
+
   // Video file upload section language selectors
   const [videoInputLanguage, setVideoInputLanguage] = useState("en");
   const [videoOutputLanguage, setVideoOutputLanguage] = useState("en");
@@ -157,6 +164,11 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState<string>("");
   const [copyStatus, setCopyStatus] = useState<{[key: string]: string}>({});
 
+  // AbortController refs for canceling ongoing requests
+  const transcribeAbortController = useRef<AbortController | null>(null);
+  const summaryAbortController = useRef<AbortController | null>(null);
+  const youtubeAbortController = useRef<AbortController | null>(null);
+
   // Sync dark mode with HTML class
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
@@ -166,6 +178,23 @@ export default function Home() {
   useEffect(() => {
     setCurrentTime(new Date().toLocaleTimeString());
   }, []);
+
+  // Cleanup function to abort any ongoing requests when component unmounts
+  useEffect(() => {
+    return () => {
+      if (transcribeAbortController.current) {
+        transcribeAbortController.current.abort();
+      }
+      if (summaryAbortController.current) {
+        summaryAbortController.current.abort();
+      }
+      if (youtubeAbortController.current) {
+        youtubeAbortController.current.abort();
+      }
+    };
+  }, []);
+
+
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string, type: string) => {
@@ -467,15 +496,70 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  const handleRemoveFile = () => {
+  // Function to reset all states to default
+  const resetToDefault = () => {
+    // Abort any ongoing requests
+    if (transcribeAbortController.current) {
+      transcribeAbortController.current.abort();
+      transcribeAbortController.current = null;
+    }
+    if (summaryAbortController.current) {
+      summaryAbortController.current.abort();
+      summaryAbortController.current = null;
+    }
+    if (youtubeAbortController.current) {
+      youtubeAbortController.current.abort();
+      youtubeAbortController.current = null;
+    }
+
     setSelectedFile(null);
     setTranscriptionOriginal("");
     setTranscriptionSummary("");
     setIsFileSelected(false);
+    setIsTranscribingVideo(false);
+    setIsTranscribingYouTube(false);
+    setIsSummaryLoading(false);
+    setAllTranslations({});
+    setAllUnformattedTranslations({});
+    setAllSummaries({});
+    setYoutubeError("");
+    setIsYouTubeVideo(false);
+    setIsUserVideo(false);
+    setYoutubeVideoId("");
+    setResultMode("original");
+  };
+
+  const handleRemoveFile = () => {
+    // Stop any ongoing processes
+    if (isTranscribingVideo && transcribeAbortController.current) {
+      transcribeAbortController.current.abort();
+    }
+    if (isTranscribingYouTube && youtubeAbortController.current) {
+      youtubeAbortController.current.abort();
+    }
+    if (isSummaryLoading && summaryAbortController.current) {
+      summaryAbortController.current.abort();
+    }
+    
+    setIsTranscribingVideo(false);
+    setIsTranscribingYouTube(false);
+    setIsSummaryLoading(false);
+    
+    // Reset to default state
+    resetToDefault();
   };
 
   const handleTranscribe = async () => {
     if (!selectedFile) return;
+
+    // If already transcribing, stop and reset
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading) {
+      resetToDefault();
+      return;
+    }
+
+    // Create new AbortController for this request
+    transcribeAbortController.current = new AbortController();
 
     setIsTranscribingVideo(true);
     setTranscriptionOriginal("");
@@ -495,8 +579,14 @@ export default function Home() {
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
+        signal: transcribeAbortController.current.signal,
       });
 
+      if (response.status === 499) {
+        console.log('Transcription request was cancelled by user');
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error('Transcription failed');
       }
@@ -508,11 +598,17 @@ export default function Home() {
       // Set the translations for the selected output language
       setAllTranslations(data.translations || {});
       setAllUnformattedTranslations(data.unformattedTranslations || {});
+
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Transcription request was cancelled');
+        return;
+      }
       console.error('Transcription error:', error);
       alert('Transcription failed. Please try again.');
     } finally {
       setIsTranscribingVideo(false);
+      transcribeAbortController.current = null;
     }
   };
 
@@ -524,6 +620,12 @@ export default function Home() {
       return;
     }
 
+    // If already processing, stop and reset
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading) {
+      resetToDefault();
+      return;
+    }
+
     // Check if summary already exists for the current output language
     const existingSummary = allSummaries[videoOutputLanguage] || transcriptionSummary;
     if (existingSummary) {
@@ -531,6 +633,9 @@ export default function Home() {
       setResultMode("summary");
       return;
     }
+
+    // Create new AbortController for this request
+    summaryAbortController.current = new AbortController();
 
     setIsSummaryLoading(true);
     setTranscriptionSummary("");
@@ -553,8 +658,14 @@ export default function Home() {
       const response = await fetch('/api/summary', {
         method: 'POST',
         body: formData,
+        signal: summaryAbortController.current.signal,
       });
 
+      if (response.status === 499) {
+        console.log('Summary request was cancelled by user');
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error('Summary generation failed');
       }
@@ -563,11 +674,17 @@ export default function Home() {
       setTranscriptionSummary(data.summary);
       // Set the summary for the selected output language
       setAllSummaries(data.summaries || {});
+
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Summary request was cancelled');
+        return;
+      }
       console.error('Summary error:', error);
       alert('Summary generation failed. Please try again.');
     } finally {
       setIsSummaryLoading(false);
+      summaryAbortController.current = null;
     }
   };
 
@@ -579,6 +696,12 @@ export default function Home() {
       return;
     }
 
+    // If already processing, stop and reset
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading) {
+      resetToDefault();
+      return;
+    }
+
     // Check if summary already exists for the current output language
     const existingSummary = allSummaries[youtubeOutputLanguage] || transcriptionSummary;
     if (existingSummary && existingSummary.trim() !== "") {
@@ -586,6 +709,9 @@ export default function Home() {
       setResultMode("summary");
       return;
     }
+
+    // Create new AbortController for this request
+    summaryAbortController.current = new AbortController();
 
     setIsSummaryLoading(true);
     setTranscriptionSummary("");
@@ -604,8 +730,14 @@ export default function Home() {
       const response = await fetch('/api/summary', {
         method: 'POST',
         body: formData,
+        signal: summaryAbortController.current.signal,
       });
 
+      if (response.status === 499) {
+        console.log('YouTube summary request was cancelled by user');
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error('Summary generation failed');
       }
@@ -614,11 +746,17 @@ export default function Home() {
       setTranscriptionSummary(data.summary);
       // Set the summary for the selected output language
       setAllSummaries(data.summaries || {});
+
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('YouTube summary request was cancelled');
+        return;
+      }
       console.error('Summary error:', error);
       alert('Summary generation failed. Please try again.');
     } finally {
       setIsSummaryLoading(false);
+      summaryAbortController.current = null;
     }
   };
 
@@ -635,6 +773,15 @@ export default function Home() {
       setYoutubeError("Please provide a valid YouTube video link");
       return;
     }
+
+    // If already transcribing, stop and reset
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading) {
+      resetToDefault();
+      return;
+    }
+
+    // Create new AbortController for this request
+    youtubeAbortController.current = new AbortController();
     
     // Extract video ID
     const match = url.match(YOUTUBE_VIDEO_REGEX);
@@ -654,9 +801,17 @@ export default function Home() {
     setAllTranslations({});
     setAllUnformattedTranslations({});
     setAllSummaries({});
-    
+
     try {
-      const response = await fetch(`/api/youtube-captions?url=${url}&text=true&lang=${youtubeInputLanguage}`);
+      const response = await fetch(`/api/youtube-captions?url=${url}&text=true&lang=${youtubeInputLanguage}`, {
+        signal: youtubeAbortController.current.signal,
+      });
+      
+      if (response.status === 499) {
+        console.log('YouTube transcription request was cancelled by user');
+        return;
+      }
+      
       const data = await response.json();
       const captions = (data.content || data.details || data.message);
       
@@ -671,7 +826,13 @@ export default function Home() {
           language: youtubeInputLanguage,
           type: 'youtube-captions'
         }),
+        signal: youtubeAbortController.current.signal,
       });
+      
+      if (formatResponse.status === 499) {
+        console.log('YouTube formatting request was cancelled by user');
+        return;
+      }
       
       if (formatResponse.ok) {
         const formattedData = await formatResponse.json();
@@ -707,10 +868,15 @@ export default function Home() {
       setTranscriptionSummary("");
       setAllSummaries({});
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('YouTube transcription request was cancelled');
+        return;
+      }
       console.error('YouTube transcription error:', error);
       setYoutubeError("Failed to transcribe video. Please try again.");
     } finally {  
       setIsTranscribingYouTube(false);
+      youtubeAbortController.current = null;
     }
   };
 
@@ -990,13 +1156,13 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col items-center gap-2">
                 <button
-                  onClick={selectedFile ? handleTranscribe : handleUploadClick}
+                  onClick={isTranscribingVideo ? handleRemoveFile : (selectedFile ? handleTranscribe : handleUploadClick)}
                   className={`text-white p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
                     selectedFile
                       ? 'bg-[#22c55e] hover:bg-[#16a34a]'
                       : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
                   } ${isTranscribingVideo ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
-                  disabled={isTranscribingVideo}
+                  disabled={false}
                 >
                   {isTranscribingVideo && (
                     <div className="relative">
@@ -1008,7 +1174,7 @@ export default function Home() {
                       <div className="absolute inset-0 rounded-full bg-white/20 animate-ping"></div>
                     </div>
                   )}
-                  {isTranscribingVideo ? t.transcribing : selectedFile ? t.transcribe : t.upload}
+                  {isTranscribingVideo ? 'Stop' : selectedFile ? t.transcribe : t.upload}
                 </button>
                 <div className="w-full flex justify-center">
                   <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.supportedFormats}</p>
@@ -1163,8 +1329,8 @@ export default function Home() {
                 className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-1 text-sm sm:text-base ${
                   isTranscribingYouTube ? 'animate-pulse' : ''
                 }`}
-                onClick={handleTranscribeYouTube}
-                disabled={isTranscribingYouTube}
+                onClick={isTranscribingYouTube ? handleRemoveFile : handleTranscribeYouTube}
+                disabled={false}
               >
                 {isTranscribingYouTube && (
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -1172,7 +1338,7 @@ export default function Home() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 )}
-                {isTranscribingYouTube ? t.transcribing : t.transcribe}
+                {isTranscribingYouTube ? 'Stop' : t.transcribe}
               </button>
               <div className="w-full flex justify-center px-2">
                 <p className={`text-xs text-center break-words ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.pasteYouTubeDescription}</p>
@@ -1251,13 +1417,12 @@ export default function Home() {
           </div>
         )}
       </div>
-      {/* Original | Summary Toggle - Show when transcription is complete OR for demo */}
-      {(transcriptionOriginal || transcriptionSummary || !isVideoUploaded || isYouTubeVideo) && (
-        <div className="w-full max-w-7xl mx-auto flex flex-row justify-center sm:justify-end items-center mt-1 px-2 sm:px-4">
+      {/* Original | Summary Toggle - Always visible */}
+      <div className="w-full max-w-7xl mx-auto flex flex-row justify-center sm:justify-end items-center mt-1 px-2 sm:px-4">
           <div className="flex items-center gap-1 sm:mr-8">
             {[
               { mode: "original", label: t.original, isFirst: true },
-              { mode: "summary", label: t.summary, isFirst: false }
+              { mode: "summary", label: isSummaryLoading ? 'Stop' : t.summary, isFirst: false }
             ].map(({ mode, label, isFirst }) => (
               <button
                 key={mode}
@@ -1274,6 +1439,12 @@ export default function Home() {
                   }`
                 }
                 onClick={() => {
+                  // If summary is loading, stop the process
+                  if (mode === "summary" && isSummaryLoading) {
+                    resetToDefault();
+                    return;
+                  }
+                  
                   setResultMode(mode as "original" | "summary");
                   if (mode === "summary") {
                     if (isYouTubeVideo) {
@@ -1289,7 +1460,8 @@ export default function Home() {
             ))}
           </div>    
         </div>
-      )}
+
+
       {/* Transcription Result */}
       {resultMode === "original" && (
         <div className={`w-full max-w-7xl mx-auto px-2 sm:px-4`}>
@@ -1391,58 +1563,116 @@ export default function Home() {
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'
             } shadow-inner`}>
-              <ReactMarkdown
-                components={{
-                  h1: ({children}) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
-                  p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-sm sm:text-base">{children}</p>,
-                  strong: ({children}) => <strong className="font-semibold text-blue-600 dark:text-blue-400">{children}</strong>,
-                  em: ({children}) => <em className="italic text-blue-500 dark:text-blue-300">{children}</em>,
-                  ul: ({children}) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ol>,
-                  li: ({children}) => <li className="mb-1">{children}</li>,
-                  blockquote: ({children}) => (
-                    <blockquote className={`border-l-3 pl-2 sm:pl-3 py-1.5 sm:py-2 my-2 sm:my-3 italic text-sm sm:text-base ${
-                      isDarkMode 
-                        ? 'border-blue-400 bg-blue-900/10' 
-                        : 'border-blue-400 bg-blue-50/50'
-                    }`}>
-                      {children}
-                    </blockquote>
-                  ),
-                  code: ({children}) => (
-                    <code className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono ${
-                      isDarkMode 
-                        ? 'bg-gray-700 text-blue-300' 
-                        : 'bg-gray-100 text-blue-700'
-                    }`}>
-                      {children}
-                    </code>
-                  ),
-                }}
-              >
-                {(() => {
-                  const content = transcriptionOriginal
-                    ? (isFormatted 
-                        ? (allTranslations[resultLang] || transcriptionOriginal)
-                        : (allUnformattedTranslations[resultLang] || transcriptionOriginal)
-                      )
-                    : (isFormatted
-                        ? (demoTranscriptionContent[selectedLanguage] ||
-                           demoTranscriptionContent['en'] ||
-                           "# Loading...")
-                        : (demoUnformattedContent[selectedLanguage] ||
-                           demoUnformattedContent['en'] ||
-                           "# Loading...")
-                      );
-                  console.log('ReactMarkdown content:', content);
-                  console.log('Content type:', typeof content);
-                  console.log('Content length:', content?.length);
-                  console.log('First 200 chars:', content?.substring(0, 200));
-                  return content;
-                })()}
-              </ReactMarkdown>
+              {(isTranscribingVideo || isTranscribingYouTube) ? (
+                /* Transcription Loading Animation */
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                  {/* Microphone Animation */}
+                  <div className="relative mb-4 sm:mb-6">
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full ${
+                      isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-purple-600/20' : 'bg-gradient-to-br from-blue-100 to-purple-100'
+                    } border-2 border-blue-500/30 flex items-center justify-center`}>
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </div>
+                    {/* Floating sound waves */}
+                    <div className="absolute -top-1 -left-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-ping"></div>
+                    <div className="absolute -top-1 -right-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-400 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+                    <div className="absolute -bottom-1 -left-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-indigo-400 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-ping" style={{animationDelay: '1.5s'}}></div>
+                  </div>
+                  
+                  {/* Loading Text */}
+                  <div className="text-center mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-blue-600 dark:text-blue-400">AI is Transcribing Audio</h3>
+                    <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {isYouTubeVideo 
+                        ? "Extracting and processing YouTube captions..."
+                        : "Converting speech to text with high accuracy..."
+                      }
+                    </p>
+                  </div>
+                  
+                  {/* Progress Steps */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`}></div>
+                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse ${isDarkMode ? 'bg-purple-400' : 'bg-purple-500'}`}></div>
+                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+                  </div>
+                  
+                  {/* Animated Icons */}
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} animate-bounce`}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </div>
+                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-purple-600/20' : 'bg-purple-100'} animate-bounce`} style={{animationDelay: '0.2s'}}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-indigo-600/20' : 'bg-indigo-100'} animate-bounce`} style={{animationDelay: '0.4s'}}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    h1: ({children}) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
+                    h2: ({children}) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
+                    h3: ({children}) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
+                    p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-sm sm:text-base">{children}</p>,
+                    strong: ({children}) => <strong className="font-semibold text-blue-600 dark:text-blue-400">{children}</strong>,
+                    em: ({children}) => <em className="italic text-blue-500 dark:text-blue-300">{children}</em>,
+                    ul: ({children}) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ul>,
+                    ol: ({children}) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ol>,
+                    li: ({children}) => <li className="mb-1">{children}</li>,
+                    blockquote: ({children}) => (
+                      <blockquote className={`border-l-3 pl-2 sm:pl-3 py-1.5 sm:py-2 my-2 sm:my-3 italic text-sm sm:text-base ${
+                        isDarkMode 
+                          ? 'border-blue-400 bg-blue-900/10' 
+                          : 'border-blue-400 bg-blue-50/50'
+                      }`}>
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({children}) => (
+                      <code className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono ${
+                        isDarkMode 
+                          ? 'bg-gray-700 text-blue-300' 
+                          : 'bg-gray-100 text-blue-700'
+                      }`}>
+                        {children}
+                      </code>
+                    ),
+                  }}
+                >
+                  {(() => {
+                    const content = transcriptionOriginal
+                      ? (isFormatted 
+                          ? (allTranslations[resultLang] || transcriptionOriginal)
+                          : (allUnformattedTranslations[resultLang] || transcriptionOriginal)
+                        )
+                      : (isFormatted
+                          ? (demoTranscriptionContent[selectedLanguage] ||
+                             demoTranscriptionContent['en'] ||
+                             "# Loading...")
+                          : (demoUnformattedContent[selectedLanguage] ||
+                             demoUnformattedContent['en'] ||
+                             "# Loading...")
+                        );
+                    console.log('ReactMarkdown content:', content);
+                    console.log('Content type:', typeof content);
+                    console.log('Content length:', content?.length);
+                    console.log('First 200 chars:', content?.substring(0, 200));
+                    return content;
+                  })()}
+                </ReactMarkdown>
+              )}
             </div>
             
             {/* Enhanced footer with metadata */}
