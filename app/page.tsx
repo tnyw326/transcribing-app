@@ -687,13 +687,13 @@ export default function Home() {
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-inter)] ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f7f9fb] text-[#222]'} text-center relative transition-colors duration-300`}>
+    <div className={`flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 md:p-8 gap-8 sm:gap-12 md:gap-16 font-[family-name:var(--font-inter)] ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f7f9fb] text-[#222]'} text-center relative transition-colors duration-300`}>
       {/* Language Selector and Dark Mode Toggle - Top Right */}
-      <div className="absolute top-8 right-8 z-10 flex items-center gap-4">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 z-10 flex items-center gap-2 sm:gap-3 md:gap-4 text-left">
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
-          className={`p-2 rounded-lg transition-colors duration-200 ${
+          className={`p-1.5 sm:p-2 rounded-lg transition-colors duration-200 ${
             isDarkMode 
               ? 'bg-gray-700 text-yellow-300 hover:bg-gray-600' 
               : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -701,22 +701,22 @@ export default function Home() {
           aria-label="Toggle dark mode"
         >
           {isDarkMode ? (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
             </svg>
           ) : (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
               <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
             </svg>
           )}
         </button>
         
         {/* Language Selector */}
-        <div className="relative">
+        <div className="relative text-left">
           <select
             value={selectedLanguage}
             onChange={(e) => setSelectedLanguage(e.target.value)}
-            className={`appearance-none rounded-lg px-4 py-2 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm transition-colors duration-200 ${
+            className={`text-left appearance-none rounded-lg px-2 sm:px-4 md:px-6 py-2 sm:py-2.5 pr-8 sm:pr-12 text-xs sm:text-sm font-semibold text-left focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm transition-colors duration-200 ${
               isDarkMode 
                 ? 'bg-gray-700 border-gray-600 text-white' 
                 : 'bg-white border-gray-300 text-gray-700'
@@ -728,8 +728,8 @@ export default function Home() {
               </option>
             ))}
           </select>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:pr-3 pointer-events-none">
+            <svg className="w-2 h-2 sm:w-3 sm:h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
@@ -738,36 +738,36 @@ export default function Home() {
 
       <div className={`items-center justify-items-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>
         {/* Icons above the title */}
-        <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-5 md:mb-6">
           {/* Video icon */}
-          <div className={`p-4 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
-            <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+          <div className={`p-2 sm:p-3 md:p-4 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
             </svg>
           </div>
           
           {/* Arrow icon */}
-          <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </div>
           
           {/* Text icon */}
-          <div className={`p-4 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
-            <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+          <div className={`p-2 sm:p-3 md:p-4 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 2a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 000 2h6a1 1 0 100-2H7zm0 4a1 1 0 000 2h4a1 1 0 100-2H7z" clipRule="evenodd" />
             </svg>
           </div>
         </div>
         
-        <p className="text-5xl font-extrabold">{t.title}</p>
-        <p className="text-2xl font-normal">{t.subtitle}</p>
+        <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold px-4">{t.title}</p>
+        <p className="text-lg sm:text-xl md:text-2xl font-normal px-4">{t.subtitle}</p>
       </div>
-      <div className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-4 lg:gap-5 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>
+      <div className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-3 sm:gap-4 lg:gap-5 px-2 sm:px-4 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[450px] lg:h-[485px] mb-5 lg:mb-0 rounded-3xl gap-4 lg:gap-5 relative p-4 lg:p-6 border-4 border-dotted transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 lg:gap-5 relative p-3 sm:p-4 lg:p-6 border-4 border-dotted transition-colors duration-200 ${
             isDragOver
               ? isDarkMode 
                 ? 'border-blue-400 bg-blue-900/20' 
@@ -786,13 +786,13 @@ export default function Home() {
         >
           <div className="flex flex-col items-center w-full h-full">
             {/* Title */}
-            <h2 className={`text-3xl font-bold pt-10 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeVideoFile}</h2>
+            <h2 className={`text-xl sm:text-2xl md:text-3xl font-bold pt-6 sm:pt-8 md:pt-10 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeVideoFile}</h2>
             {/* Language Selectors */}
-            <div className="flex flex-row mb-10 w-full items-center gap-4">
+            <div className="flex flex-col sm:flex-row mb-6 sm:mb-8 md:mb-10 w-full items-center gap-3 sm:gap-4">
               {/* Input Language Selector */}
               <div className="flex flex-col w-full items-center">
-                <label className="text-sm font-semibold pt-10 mb-1 relative">{t.inputLanguage}</label>
-                <div className="relative w-full max-w-md" ref={videoInputDropdownRef}>
+                <label className="text-xs sm:text-sm font-semibold pt-4 sm:pt-6 md:pt-10 mb-1 relative">{t.inputLanguage}</label>
+                <div className="relative w-full max-w-xs sm:max-w-md" ref={videoInputDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setIsVideoInputDropdownOpen(!isVideoInputDropdownOpen)}
@@ -859,8 +859,8 @@ export default function Home() {
               </div>
               {/* Output Language Selector */}
               <div className="flex flex-col w-full items-center">
-                <label className="text-sm font-semibold pt-10 mb-1 relative">{t.outputLanguage}</label>
-                <div className="relative w-full max-w-md" ref={videoOutputDropdownRef}>
+                <label className="text-xs sm:text-sm font-semibold pt-4 sm:pt-6 md:pt-10 mb-1 relative">{t.outputLanguage}</label>
+                <div className="relative w-full max-w-xs sm:max-w-md" ref={videoOutputDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setIsVideoOutputDropdownOpen(!isVideoOutputDropdownOpen)}
@@ -962,7 +962,7 @@ export default function Home() {
             <div className="flex-1"></div>
             <button
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
-              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-2 ${
+              className={`text-white p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
                 selectedFile
                   ? 'bg-[#22c55e] hover:bg-[#16a34a]'
                   : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
@@ -988,16 +988,16 @@ export default function Home() {
               onChange={handleFileSelect}
               className="hidden"
             />
-            <div className="w-full flex justify-center mt-5">
+            <div className="w-full flex justify-center mt-3 sm:mt-5">
               <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.supportedFormats}</p>
             </div>
           </div>
         </div>
         {/* YouTube Card */}
-        <div className={`flex flex-col items-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[450px] lg:h-[485px] mb-5 lg:mb-0 rounded-3xl gap-4 relative p-4 lg:p-6 border-4 ${
+        <div className={`flex flex-col items-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 relative p-3 sm:p-4 lg:p-6 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-[#e5e7eb] shadow-lg'
         }`}>
-          <h2 className={`text-3xl font-bold pt-8 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeYouTube}</h2>
+          <h2 className={`text-xl sm:text-2xl md:text-3xl font-bold pt-6 sm:pt-8 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeYouTube}</h2>
           <div className="flex flex-col items-center justify-center w-full">
             <div className="w-full flex justify-center mb-2">
               <a
@@ -1009,13 +1009,13 @@ export default function Home() {
                 https://www.youtube.com/
               </a>
             </div>
-            <div className="text-center w-full mb-4">
-              <div className="relative inline-block w-full max-w-md">
+            <div className="text-center w-full mb-3 sm:mb-4">
+              <div className="relative inline-block w-full max-w-xs sm:max-w-md">
                 <input
                   ref={urlInputRef}
                   type="text"
                   placeholder={t.pasteYouTubeLink}
-                  className={`w-full p-3 pr-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 ${
+                  className={`w-full p-2.5 sm:p-3 pr-8 sm:pr-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 text-sm sm:text-base ${
                     isDarkMode 
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
                       : 'bg-white border-[#e5e7eb] text-[#374151] placeholder-[#94a3b8]'
@@ -1031,9 +1031,9 @@ export default function Home() {
             </div>
           </div>
           {/* Language Selector */}
-          <div className="flex flex-col mb-4 w-full items-center">
+          <div className="flex flex-col mb-3 sm:mb-4 w-full items-center">
             <div className="flex items-center gap-2 mb-1 group relative">
-              <label className="text-sm font-semibold">{t.outputLanguage}</label>
+              <label className="text-xs sm:text-sm font-semibold">{t.outputLanguage}</label>
               <div
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold cursor-help ${isDarkMode
                     ? "bg-gray-600 text-gray-300"
@@ -1059,7 +1059,7 @@ export default function Home() {
                 ></div>
               </div>
             </div>
-            <div className="relative w-full max-w-md" ref={youtubeOutputDropdownRef}>
+            <div className="relative w-full max-w-xs sm:max-w-md" ref={youtubeOutputDropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsYoutubeOutputDropdownOpen(!isYoutubeOutputDropdownOpen)}
@@ -1129,7 +1129,7 @@ export default function Home() {
           <div className="flex-1"></div>
           <div className="flex flex-col items-center gap-2">
             <button
-              className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-1 ${
+              className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-1 text-sm sm:text-base ${
                 isTranscribingYouTube ? 'animate-pulse' : ''
               }`}
               onClick={handleTranscribeYouTube}
@@ -1151,18 +1151,18 @@ export default function Home() {
 
         {/* Video Preview Card - Appears after file upload or YouTube video */}
         {(isVideoUploaded || isYouTubeVideo) && (
-          <div className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[450px] lg:h-[485px] mb-5 lg:mb-0 rounded-3xl gap-4 lg:gap-5 relative p-4 lg:p-6 border-4 ${
+          <div className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 lg:gap-5 relative p-3 sm:p-4 lg:p-6 border-4 ${
             isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-[#e5e7eb] shadow-lg'
           }`}>
           {/* User Video */}
           {isUserVideo && selectedFile && (
-            <div className="flex flex-col items-center justify-center gap-5 w-full">
-              <h2 className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>Video Preview</h2>
+            <div className="flex flex-col items-center justify-center gap-3 sm:gap-5 w-full">
+              <h2 className={`text-xl sm:text-2xl md:text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>Video Preview</h2>
               <div className="w-full">
                 <video
                   src={URL.createObjectURL(selectedFile)}
                   controls
-                  className={`rounded-xl shadow-lg max-h-64 w-auto border mx-auto block ${
+                  className={`rounded-xl shadow-lg max-h-48 sm:max-h-56 md:max-h-64 w-auto border mx-auto block ${
                     isDarkMode ? 'border-gray-600' : 'border-gray-300'
                   }`}
                 />
@@ -1175,22 +1175,22 @@ export default function Home() {
           )}
           {/* YouTube Video */}
           {isYouTubeVideo && (
-            <div className="flex flex-col items-center justify-center gap-5 w-full">
-              <h2 className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>YouTube Video</h2>
+            <div className="flex flex-col items-center justify-center gap-3 sm:gap-5 w-full">
+              <h2 className={`text-xl sm:text-2xl md:text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>YouTube Video</h2>
               <div className="w-full">
                 {youtubeVideoId ? (
-                  <div className={`rounded-xl shadow-lg max-h-64 w-auto border mx-auto block overflow-hidden ${
+                  <div className={`rounded-xl shadow-lg max-h-48 sm:max-h-56 md:max-h-64 w-auto border mx-auto block overflow-hidden ${
                     isDarkMode ? 'border-gray-600' : 'border-gray-300'
                   }`}>
                     <iframe
                       width="100%"
-                      height="240"
+                      height="200"
+                      className="sm:h-[220px] md:h-[240px] rounded-xl"
                       src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1`}
                       title="YouTube video player"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
-                      className="rounded-xl"
                     ></iframe>
                   </div>
                 ) : (
@@ -1221,8 +1221,8 @@ export default function Home() {
       </div>
       {/* Original | Summary Toggle - Show when transcription is complete OR for demo */}
       {(transcriptionOriginal || transcriptionSummary || !isVideoUploaded || isYouTubeVideo) && (
-        <div className="w-full max-w-7xl mx-auto flex flex-row justify-end items-center mt-1">
-          <div className="flex items-center gap-1 mr-8">
+        <div className="w-full max-w-7xl mx-auto flex flex-row justify-center sm:justify-end items-center mt-1 px-2 sm:px-4">
+          <div className="flex items-center gap-1 sm:mr-8">
             {[
               { mode: "original", label: t.original, isFirst: true },
               { mode: "summary", label: t.summary, isFirst: false }
@@ -1230,8 +1230,8 @@ export default function Home() {
               <button
                 key={mode}
                 className={
-                  `px-6 py-3 border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg
-                  ${isFirst ? 'rounded-l-xl' : 'rounded-r-xl border-l-0'}
+                  `px-3 sm:px-4 md:px-6 py-2 sm:py-3 border-2 font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 shadow-md hover:shadow-lg
+                  ${isFirst ? 'rounded-l-lg sm:rounded-l-xl' : 'rounded-r-lg sm:rounded-r-xl border-l-0'}
                   ${resultMode === mode && mode === "original"
                     ? 'bg-blue-400 text-white border-blue-400 shadow-blue-400/25'
                     : resultMode === mode && mode === "summary"
@@ -1260,55 +1260,55 @@ export default function Home() {
       )}
       {/* Transcription Result */}
       {resultMode === "original" && (
-        <div className={`w-full max-w-7xl mx-auto`}>
-          <div className={`p-8 rounded-3xl shadow-2xl border-2 transition-all duration-500 backdrop-blur-sm ${
+        <div className={`w-full max-w-7xl mx-auto px-2 sm:px-4`}>
+          <div className={`p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-2xl border-2 transition-all duration-500 backdrop-blur-sm ${
             isDarkMode 
               ? 'bg-gradient-to-br from-gray-800/95 via-gray-800/90 to-gray-900/95 border-gray-600/50 text-white shadow-gray-900/30' 
               : 'bg-gradient-to-br from-white/95 via-white/90 to-[#f7f9fb]/95 border-[#e5e7eb]/50 text-[#222] shadow-[#e5e7eb]/30'
           }`}>
             {/* Header with icon and gradient background */}
-            <div className={`flex items-center justify-between mb-8 p-4 rounded-2xl ${
+            <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 p-3 sm:p-4 rounded-2xl gap-3 sm:gap-4 ${
               isDarkMode 
                 ? 'bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20' 
                 : 'bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50'
             }`}>
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} shadow-lg`}> 
-                  <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`p-2 sm:p-3 rounded-xl ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} shadow-lg`}> 
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-3xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h3 className="font-bold text-xl sm:text-2xl md:text-3xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     {t.transcriptionOriginal}
                   </h3>
-                  <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-xs sm:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Full transcription with markdown formatting
                   </p>
                 </div>
               </div>
               {/* Format Toggle and Copy Button */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
                 {/* Format Toggle */}
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg ${
+                <div className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 shadow-lg text-xs sm:text-sm ${
                   isDarkMode 
                     ? 'bg-blue-600/20 border border-blue-500/30' 
                     : 'bg-blue-100 border border-blue-300/50'
                 }`}>
-                  <span className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                  <span className={`${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
                     {isFormatted ? 'Formatted' : 'Unformatted'}
                   </span>
                   <button
                     onClick={() => setIsFormatted(!isFormatted)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    className={`relative inline-flex h-4 w-7 sm:h-5 sm:w-9 items-center rounded-full transition-colors ${
                       isFormatted 
                         ? 'bg-blue-500' 
                         : 'bg-gray-400'
                     }`}
                   >
                     <span
-                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                        isFormatted ? 'translate-x-5' : 'translate-x-1'
+                      className={`inline-block h-2.5 w-2.5 sm:h-3 sm:w-3 transform rounded-full bg-white transition-transform ${
+                        isFormatted ? 'translate-x-3.5 sm:translate-x-5' : 'translate-x-0.5 sm:translate-x-1'
                       }`}
                     />
                   </button>
@@ -1328,7 +1328,7 @@ export default function Home() {
                         ),
                     'original'
                   )}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 text-xs sm:text-sm ${
                     isDarkMode 
                       ? 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30' 
                       : 'bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300/50'
@@ -1336,14 +1336,14 @@ export default function Home() {
                 >
                   {copyStatus['original'] ? (
                     <>
-                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       <span className="text-green-500">{copyStatus['original']}</span>
                     </>
                   ) : (
                     <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                       <span>Copy</span>
@@ -1354,24 +1354,24 @@ export default function Home() {
             </div>
             
             {/* Content with enhanced styling */}
-            <div className={`markdown-body text-left p-6 rounded-2xl ${
+            <div className={`markdown-body text-left p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl ${
               isDarkMode 
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'
             } shadow-inner`}>
               <ReactMarkdown
                 components={{
-                  h1: ({children}) => <h1 className="text-2xl font-semibold mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
-                  p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+                  h1: ({children}) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
+                  h2: ({children}) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
+                  h3: ({children}) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
+                  p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-sm sm:text-base">{children}</p>,
                   strong: ({children}) => <strong className="font-semibold text-blue-600 dark:text-blue-400">{children}</strong>,
                   em: ({children}) => <em className="italic text-blue-500 dark:text-blue-300">{children}</em>,
-                  ul: ({children}) => <ul className="list-disc list-inside mb-3 space-y-1 ml-4">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal list-inside mb-3 space-y-1 ml-4">{children}</ol>,
+                  ul: ({children}) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ol>,
                   li: ({children}) => <li className="mb-1">{children}</li>,
                   blockquote: ({children}) => (
-                    <blockquote className={`border-l-3 pl-3 py-2 my-3 italic ${
+                    <blockquote className={`border-l-3 pl-2 sm:pl-3 py-1.5 sm:py-2 my-2 sm:my-3 italic text-sm sm:text-base ${
                       isDarkMode 
                         ? 'border-blue-400 bg-blue-900/10' 
                         : 'border-blue-400 bg-blue-50/50'
@@ -1380,7 +1380,7 @@ export default function Home() {
                     </blockquote>
                   ),
                   code: ({children}) => (
-                    <code className={`px-2 py-1 rounded text-sm font-mono ${
+                    <code className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono ${
                       isDarkMode 
                         ? 'bg-gray-700 text-blue-300' 
                         : 'bg-gray-100 text-blue-700'
@@ -1414,12 +1414,12 @@ export default function Home() {
             </div>
             
             {/* Enhanced footer with metadata */}
-            <div className={`flex items-center justify-between mt-8 pt-6 border-t ${
+            <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t gap-3 sm:gap-0 ${
               isDarkMode ? 'border-gray-600/30' : 'border-gray-300/30'
             }`}>
-              <div className="flex items-center gap-3 text-sm">
-                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -1427,16 +1427,16 @@ export default function Home() {
                   {currentTime ? `Generated at ${currentTime}` : "Generated"}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-lg ${
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg ${
                   isDarkMode 
                     ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 border border-blue-500/30' 
                     : 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border border-blue-300/50'
                 }`}>
                   {resultLang.toUpperCase()}
                 </span>
-                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
@@ -1446,29 +1446,29 @@ export default function Home() {
         </div>
       )}
       {resultMode === "summary" && (
-        <div className={`w-full max-w-7xl mx-auto`}>
-          <div className={`p-8 rounded-3xl shadow-2xl border-2 transition-all duration-500 backdrop-blur-sm ${
+        <div className={`w-full max-w-7xl mx-auto px-2 sm:px-4`}>
+          <div className={`p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-2xl border-2 transition-all duration-500 backdrop-blur-sm ${
             isDarkMode 
               ? 'bg-gradient-to-br from-gray-800/95 via-gray-800/90 to-gray-900/95 border-gray-600/50 text-white shadow-gray-900/30' 
               : 'bg-gradient-to-br from-white/95 via-white/90 to-[#f7f9fb]/95 border-[#e5e7eb]/50 text-[#222] shadow-[#e5e7eb]/30'
           }`}>
             {/* Header with icon and gradient background */}
-            <div className={`flex items-center justify-between mb-8 p-4 rounded-2xl ${
+            <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 p-3 sm:p-4 rounded-2xl gap-3 sm:gap-4 ${
               isDarkMode 
                 ? 'bg-gradient-to-r from-green-600/10 to-emerald-600/10 border border-green-500/20' 
                 : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
             }`}>
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'} shadow-lg`}>
-                  <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`p-2 sm:p-3 rounded-xl ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'} shadow-lg`}>
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-3xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                  <h3 className="font-bold text-xl sm:text-2xl md:text-3xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                     {t.transcriptionSummary}
                   </h3>
-                  <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-xs sm:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     AI-powered content summary with key insights
                   </p>
                 </div>
@@ -1483,7 +1483,7 @@ export default function Home() {
                   '',
                   'summary'
                 )}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 text-xs sm:text-sm ${
                   isDarkMode 
                     ? 'bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/30' 
                     : 'bg-green-100 hover:bg-green-200 text-green-700 border border-green-300/50'
@@ -1491,14 +1491,14 @@ export default function Home() {
               >
                 {copyStatus['summary'] ? (
                   <>
-                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-green-500">{copyStatus['summary']}</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                     <span>Copy</span>
@@ -1508,34 +1508,34 @@ export default function Home() {
             </div>
             
             {/* Content with enhanced styling */}
-            <div className={`markdown-body text-left p-6 rounded-2xl ${
+            <div className={`markdown-body text-left p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl ${
               isDarkMode 
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'
             } shadow-inner`}>
               {isSummaryLoading ? (
                 /* Inline Loading Animation */
-                <div className="flex flex-col items-center justify-center py-12">
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
                   {/* AI Brain Animation */}
-                  <div className="relative mb-6">
-                    <div className={`w-16 h-16 rounded-full ${
+                  <div className="relative mb-4 sm:mb-6">
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full ${
                       isDarkMode ? 'bg-gradient-to-br from-green-600/20 to-emerald-600/20' : 'bg-gradient-to-br from-green-100 to-emerald-100'
                     } border-2 border-green-500/30 flex items-center justify-center`}>
-                      <svg className="w-8 h-8 text-green-500 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                       </svg>
                     </div>
                     {/* Floating neurons */}
-                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-                    <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-                    <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>
-                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-ping" style={{animationDelay: '1.5s'}}></div>
+                    <div className="absolute -top-1 -left-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-ping"></div>
+                    <div className="absolute -top-1 -right-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-400 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+                    <div className="absolute -bottom-1 -left-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-blue-400 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-400 rounded-full animate-ping" style={{animationDelay: '1.5s'}}></div>
                   </div>
                   
                   {/* Loading Text */}
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-bold mb-2 text-green-600 dark:text-green-400">AI is Analyzing Content</h3>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="text-center mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-green-600 dark:text-green-400">AI is Analyzing Content</h3>
+                    <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {isYouTubeVideo 
                         ? "Extracting key insights from your YouTube video..."
                         : "Identifying main topics and generating concise summary..."
@@ -1544,26 +1544,26 @@ export default function Home() {
                   </div>
                   
                   {/* Progress Steps */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-500'}`}></div>
-                    <div className={`w-2 h-2 rounded-full animate-pulse ${isDarkMode ? 'bg-emerald-400' : 'bg-emerald-500'}`}></div>
-                    <div className={`w-2 h-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-500'}`}></div>
+                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse ${isDarkMode ? 'bg-emerald-400' : 'bg-emerald-500'}`}></div>
+                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
                   </div>
                   
                   {/* Animated Icons */}
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'} animate-bounce`}>
-                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'} animate-bounce`}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                    <div className={`p-2 rounded-full ${isDarkMode ? 'bg-emerald-600/20' : 'bg-emerald-100'} animate-bounce`} style={{animationDelay: '0.2s'}}>
-                      <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-emerald-600/20' : 'bg-emerald-100'} animate-bounce`} style={{animationDelay: '0.2s'}}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     </div>
-                    <div className={`p-2 rounded-full ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} animate-bounce`} style={{animationDelay: '0.4s'}}>
-                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} animate-bounce`} style={{animationDelay: '0.4s'}}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                     </div>
@@ -1572,17 +1572,17 @@ export default function Home() {
               ) : (
                 <ReactMarkdown
                   components={{
-                    h1: ({children}) => <h1 className="text-2xl font-semibold mb-3 text-green-600 dark:text-green-400">{children}</h1>,
-                    h2: ({children}) => <h2 className="text-xl font-semibold mb-2 text-green-500 dark:text-green-300">{children}</h2>,
-                    h3: ({children}) => <h3 className="text-lg font-semibold mb-2 text-green-400 dark:text-green-200">{children}</h3>,
-                    p: ({children}) => <p className="mb-3 leading-relaxed">{children}</p>,
+                    h1: ({children}) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-green-600 dark:text-green-400">{children}</h1>,
+                    h2: ({children}) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-green-500 dark:text-green-300">{children}</h2>,
+                    h3: ({children}) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-green-400 dark:text-green-200">{children}</h3>,
+                    p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-sm sm:text-base">{children}</p>,
                     strong: ({children}) => <strong className="font-semibold text-green-600 dark:text-green-400">{children}</strong>,
                     em: ({children}) => <em className="italic text-green-500 dark:text-green-300">{children}</em>,
-                    ul: ({children}) => <ul className="list-disc list-inside mb-3 space-y-1 ml-4">{children}</ul>,
-                    ol: ({children}) => <ol className="list-decimal list-inside mb-3 space-y-1 ml-4">{children}</ol>,
+                    ul: ({children}) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ul>,
+                    ol: ({children}) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ol>,
                     li: ({children}) => <li className="mb-1">{children}</li>,
                     blockquote: ({children}) => (
-                      <blockquote className={`border-l-3 pl-3 py-2 my-3 italic ${
+                      <blockquote className={`border-l-3 pl-2 sm:pl-3 py-1.5 sm:py-2 my-2 sm:my-3 italic text-sm sm:text-base ${
                         isDarkMode 
                           ? 'border-green-400 bg-green-900/10' 
                           : 'border-green-400 bg-green-50/50'
@@ -1591,7 +1591,7 @@ export default function Home() {
                       </blockquote>
                     ),
                     code: ({children}) => (
-                      <code className={`px-2 py-1 rounded text-sm font-mono ${
+                      <code className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono ${
                         isDarkMode 
                           ? 'bg-gray-700 text-green-300' 
                           : 'bg-gray-100 text-green-700'
@@ -1615,12 +1615,12 @@ export default function Home() {
             </div>
             
             {/* Enhanced footer with metadata */}
-            <div className={`flex items-center justify-between mt-8 pt-6 border-t ${
+            <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t gap-3 sm:gap-0 ${
               isDarkMode ? 'border-gray-600/30' : 'border-gray-300/30'
             }`}>
-              <div className="flex items-center gap-3 text-sm">
-                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -1628,16 +1628,16 @@ export default function Home() {
                   {currentTime ? `Generated at ${currentTime}` : "Generated"}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold shadow-lg ${
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg ${
                   isDarkMode 
                     ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-300 border border-green-500/30' 
                     : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300/50'
                 }`}>
                   {resultLang.toUpperCase()}
                 </span>
-                <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
