@@ -420,22 +420,19 @@ export default function Home() {
 
   return (
     <div
-      className={`flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-inter)] ${
-        isDarkMode ? "bg-gray-900 text-white" : "bg-[#f7f9fb] text-[#222]"
-      } text-center relative transition-colors duration-300`}
+      className={`flex flex-col items-center justify-center min-h-screen p-8 gap-16 font-[family-name:var(--font-inter)] ${isDarkMode ? "bg-gray-900 text-white" : "bg-[#f7f9fb] text-[#222]"
+        } text-center relative transition-colors duration-300`}
     >
       <div
-        className={`items-center justify-items-center ${
-          isDarkMode ? "text-white" : "text-[#222]"
-        }`}
+        className={`items-center justify-items-center ${isDarkMode ? "text-white" : "text-[#222]"
+          }`}
       >
         {/* Icons above the title */}
         <div className="flex items-center justify-center gap-4 mb-6">
           {/* Video icon */}
           <div
-            className={`p-4 rounded-full ${
-              isDarkMode ? "bg-gray-800" : "bg-white"
-            } shadow-lg`}
+            className={`p-4 rounded-full ${isDarkMode ? "bg-gray-800" : "bg-white"
+              } shadow-lg`}
           >
             <svg
               className="w-8 h-8 text-blue-500"
@@ -452,9 +449,8 @@ export default function Home() {
 
           {/* Arrow icon */}
           <div
-            className={`p-2 rounded-full ${
-              isDarkMode ? "bg-gray-700" : "bg-gray-100"
-            }`}
+            className={`p-2 rounded-full ${isDarkMode ? "bg-gray-700" : "bg-gray-100"
+              }`}
           >
             <svg
               className="w-6 h-6 text-gray-500"
@@ -473,9 +469,8 @@ export default function Home() {
 
           {/* Text icon */}
           <div
-            className={`p-4 rounded-full ${
-              isDarkMode ? "bg-gray-800" : "bg-white"
-            } shadow-lg`}
+            className={`p-4 rounded-full ${isDarkMode ? "bg-gray-800" : "bg-white"
+              } shadow-lg`}
           >
             <svg
               className="w-8 h-8 text-green-500"
@@ -495,27 +490,24 @@ export default function Home() {
         <p className="text-2xl font-normal">{t.subtitle}</p>
       </div>
       <div
-        className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-5 ${
-          isDarkMode ? "text-white" : "text-[#222]"
-        }`}
+        className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-5 ${isDarkMode ? "text-white" : "text-[#222]"
+          }`}
       >
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full ${
-            isVideoUploaded ? "lg:w-1/3" : "lg:w-1/2"
-          } lg:h-[485px] h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${
-            isDragOver
+          className={`flex flex-col items-center justify-center w-full ${isVideoUploaded ? "lg:w-1/3" : "lg:w-1/2"
+            } lg:h-[485px] h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 border-dotted transition-colors duration-200 ${isDragOver
               ? isDarkMode
                 ? "border-blue-400 bg-blue-900/20"
                 : "border-[#2563eb] bg-[#e8f0fe]"
               : selectedFile
-              ? isDarkMode
-                ? "border-green-400 bg-green-900/20"
-                : "border-[#22c55e] bg-[#e7fbe9]"
-              : isDarkMode
-              ? "border-gray-600 bg-gray-800"
-              : "border-[#e5e7eb] bg-white shadow-lg"
-          }`}
+                ? isDarkMode
+                  ? "border-green-400 bg-green-900/20"
+                  : "border-[#22c55e] bg-[#e7fbe9]"
+                : isDarkMode
+                  ? "border-gray-600 bg-gray-800"
+                  : "border-[#e5e7eb] bg-white shadow-lg"
+            }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -523,9 +515,8 @@ export default function Home() {
           <div className="flex flex-col items-center w-full h-full">
             {/* Title */}
             <h2
-              className={`text-3xl font-bold pt-10 ${
-                isDarkMode ? "text-white" : "text-[#222]"
-              }`}
+              className={`text-3xl font-bold pt-10 ${isDarkMode ? "text-white" : "text-[#222]"
+                }`}
             >
               {t.transcribeVideoFile}
             </h2>
@@ -539,11 +530,10 @@ export default function Home() {
                 <select
                   value={inputLanguage}
                   onChange={(e) => setInputLanguage(e.target.value)}
-                  className={`rounded-lg p-3 border ${
-                    isDarkMode
+                  className={`rounded-lg p-3 border ${isDarkMode
                       ? "bg-gray-700 border-gray-600 text-white"
                       : "bg-white border-gray-300 text-gray-700"
-                  }`}
+                    }`}
                 >
                   <option value="en">English</option>
                   <option value="zh">Chinese</option>
@@ -558,11 +548,10 @@ export default function Home() {
                 <select
                   value={outputLanguage}
                   onChange={(e) => setOutputLanguage(e.target.value)}
-                  className={`rounded-lg p-3 border ${
-                    isDarkMode
+                  className={`rounded-lg p-3 border ${isDarkMode
                       ? "bg-gray-700 border-gray-600 text-white"
                       : "bg-white border-gray-300 text-gray-700"
-                  }`}
+                    }`}
                 >
                   <option value="en">English</option>
                   <option value="zh">Chinese</option>
@@ -581,9 +570,8 @@ export default function Home() {
                   <button
                     onClick={handleRemoveFile}
                     aria-label="Remove file"
-                    className={`ml-1 p-1 rounded-full transition-colors mt-0 ${
-                      isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
-                    }`}
+                    className={`ml-1 p-1 rounded-full transition-colors mt-0 ${isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
+                      }`}
                     type="button"
                   >
                     <svg
@@ -602,9 +590,8 @@ export default function Home() {
                 </div>
                 <div className="flex flex-row items-center justify-center gap-2">
                   <p
-                    className={`text-sm font-semibold mt-5 ${
-                      isDarkMode ? "text-gray-300" : "text-[#374151]"
-                    }`}
+                    className={`text-sm font-semibold mt-5 ${isDarkMode ? "text-gray-300" : "text-[#374151]"
+                      }`}
                   >
                     {selectedFile.name}
                   </p>
@@ -616,9 +603,8 @@ export default function Home() {
             ) : (
               <div>
                 <p
-                  className={`text-sm ${
-                    isDarkMode ? "text-gray-400" : "text-[#64748b]"
-                  }`}
+                  className={`text-sm ${isDarkMode ? "text-gray-400" : "text-[#64748b]"
+                    }`}
                 >
                   {t.dropOrUpload}
                 </p>
@@ -629,11 +615,10 @@ export default function Home() {
             <div className="flex-1"></div>
             <button
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
-              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${
-                selectedFile
+              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${selectedFile
                   ? "bg-[#22c55e] hover:bg-[#16a34a]"
                   : "bg-[#2563eb] hover:bg-[#1d4ed8]"
-              } ${isTranscribingVideo ? "animate-pulse" : ""}`}
+                } ${isTranscribingVideo ? "animate-pulse" : ""}`}
               disabled={isTranscribingVideo}
             >
               {isTranscribingVideo && (
@@ -660,8 +645,8 @@ export default function Home() {
               {isTranscribingVideo
                 ? t.transcribing
                 : selectedFile
-                ? t.transcribe
-                : t.upload}
+                  ? t.transcribe
+                  : t.upload}
             </button>
             <input
               ref={fileInputRef}
@@ -672,9 +657,8 @@ export default function Home() {
             />
             <div className="w-full flex justify-center mt-5">
               <p
-                className={`text-xs ${
-                  isDarkMode ? "text-gray-500" : "text-[#94a3b8]"
-                }`}
+                className={`text-xs ${isDarkMode ? "text-gray-500" : "text-[#94a3b8]"
+                  }`}
               >
                 {t.supportedFormats}
               </p>
@@ -683,18 +667,15 @@ export default function Home() {
         </div>
         {/* YouTube Card */}
         <div
-          className={`flex flex-col items-center w-full ${
-            isVideoUploaded ? "lg:w-1/3" : "lg:w-1/2"
-          } h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
-            isDarkMode
+          className={`flex flex-col items-center w-full ${isVideoUploaded ? "lg:w-1/3" : "lg:w-1/2"
+            } h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${isDarkMode
               ? "bg-gray-800 border-gray-600"
               : "bg-white border-[#e5e7eb] shadow-lg"
-          }`}
+            }`}
         >
           <h2
-            className={`text-3xl font-bold pt-10 ${
-              isDarkMode ? "text-white" : "text-[#222]"
-            }`}
+            className={`text-3xl font-bold pt-10 ${isDarkMode ? "text-white" : "text-[#222]"
+              }`}
           >
             {t.transcribeYouTube}
           </h2>
@@ -704,9 +685,8 @@ export default function Home() {
                 href="https://www.youtube.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`text-blue-600 hover:underline text-md font-medium ${
-                  isDarkMode ? "dark:text-green-600" : ""
-                }`}
+                className={`text-blue-600 hover:underline text-md font-medium ${isDarkMode ? "dark:text-green-600" : ""
+                  }`}
               >
                 https://www.youtube.com/
               </a>
@@ -716,17 +696,15 @@ export default function Home() {
                 ref={urlInputRef}
                 type="text"
                 placeholder={t.pasteYouTubeLink}
-                className={`w-full max-w-md p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 ${
-                  isDarkMode
+                className={`w-full max-w-md p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 ${isDarkMode
                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                     : "bg-white border-[#e5e7eb] text-[#374151] placeholder-[#94a3b8]"
-                }`}
+                  }`}
                 onChange={() => setYoutubeError("")}
               />
               <p
-                className={`mt-2 text-xs ${
-                  youtubeError ? "text-red-500" : "invisible"
-                }`}
+                className={`mt-2 text-xs ${youtubeError ? "text-red-500" : "invisible"
+                  }`}
               >
                 {youtubeError || "placeholder"}
               </p>
@@ -740,20 +718,18 @@ export default function Home() {
               </label>
               <div className="relative group">
                 <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold cursor-help ${
-                    isDarkMode
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold cursor-help ${isDarkMode
                       ? "bg-gray-600 text-gray-300"
                       : "bg-gray-200 text-gray-600"
-                  }`}
+                    }`}
                 >
                   ?
                 </div>
                 <div
-                  className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 leading-tight whitespace-nowrap ${
-                    isDarkMode
+                  className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 leading-tight whitespace-nowrap ${isDarkMode
                       ? "bg-gray-800 text-gray-200 border border-gray-600"
                       : "bg-gray-100 text-black border border-gray-300"
-                  }`}
+                    }`}
                 >
                   Note: Please select a language that captions are available{" "}
                   <br />
@@ -761,9 +737,8 @@ export default function Home() {
                   <br />
                   or the first available caption language for that video.
                   <div
-                    className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
-                      isDarkMode ? "border-t-gray-800" : "border-t-gray-100"
-                    }`}
+                    className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${isDarkMode ? "border-t-gray-800" : "border-t-gray-100"
+                      }`}
                   ></div>
                 </div>
               </div>
@@ -772,11 +747,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${
-                  isDarkMode
+                className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${isDarkMode
                     ? "bg-gray-700 border-gray-600 text-white"
                     : "bg-white border-gray-300 text-gray-700"
-                }`}
+                  }`}
               >
                 <span>
                   {youtubeLanguages.find(
@@ -784,9 +758,8 @@ export default function Home() {
                   )?.name || "English"}
                 </span>
                 <svg
-                  className={`w-4 h-4 transition-transform ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -801,11 +774,10 @@ export default function Home() {
               </button>
               {isDropdownOpen && (
                 <div
-                  className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${
-                    isDarkMode
+                  className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${isDarkMode
                       ? "bg-gray-700 border-gray-600"
                       : "bg-white border-gray-300"
-                  } shadow-lg`}
+                    } shadow-lg`}
                 >
                   {/* Search Input */}
                   <div className="sticky top-0 p-2 border-b border-gray-300 dark:border-gray-600 bg-inherit">
@@ -814,11 +786,10 @@ export default function Home() {
                       placeholder="Search languages..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
-                        isDarkMode
+                      className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${isDarkMode
                           ? "bg-gray-600 border-gray-500 text-white placeholder-gray-400"
                           : "bg-white border-gray-300 text-gray-700 placeholder-gray-500"
-                      }`}
+                        }`}
                       autoFocus
                     />
                   </div>
@@ -843,15 +814,13 @@ export default function Home() {
                             setIsDropdownOpen(false);
                             setSearchTerm("");
                           }}
-                          className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${
-                            isDarkMode ? "hover:bg-gray-600" : ""
-                          } ${
-                            youtubeLanguage === language.code
+                          className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? "hover:bg-gray-600" : ""
+                            } ${youtubeLanguage === language.code
                               ? isDarkMode
                                 ? "bg-gray-600"
                                 : "bg-gray-100"
                               : ""
-                          }`}
+                            }`}
                         >
                           {language.name}
                         </button>
@@ -865,9 +834,8 @@ export default function Home() {
           {/* Spacer to push button to bottom 20% */}
           <div className="flex-1"></div>
           <button
-            className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${
-              isTranscribingYouTube ? "animate-pulse" : ""
-            }`}
+            className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${isTranscribingYouTube ? "animate-pulse" : ""
+              }`}
             onClick={handleTranscribeYouTube}
             disabled={isTranscribingYouTube}
           >
@@ -896,9 +864,8 @@ export default function Home() {
           </button>
           <div className="w-full flex justify-center">
             <p
-              className={`text-xs ${
-                isDarkMode ? "text-gray-500" : "text-[#94a3b8]"
-              }`}
+              className={`text-xs ${isDarkMode ? "text-gray-500" : "text-[#94a3b8]"
+                }`}
             >
               {t.pasteYouTubeDescription}
             </p>
@@ -907,17 +874,15 @@ export default function Home() {
         {/* Video Preview Card - Appears after file upload */}
         {isVideoUploaded && (
           <div
-            className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${
-              isDarkMode
+            className={`flex flex-col items-center justify-center w-full lg:w-1/3 h-[485px] mb-5 lg:mb-0 rounded-3xl gap-5 relative p-6 border-4 ${isDarkMode
                 ? "bg-gray-800 border-gray-600"
                 : "bg-white border-[#e5e7eb] shadow-lg"
-            }`}
+              }`}
           >
             <div className="flex flex-col items-center justify-center gap-5 w-full">
               <h2
-                className={`text-3xl font-bold text-center ${
-                  isDarkMode ? "text-white" : "text-[#222]"
-                }`}
+                className={`text-3xl font-bold text-center ${isDarkMode ? "text-white" : "text-[#222]"
+                  }`}
               >
                 Video Preview
               </h2>
@@ -925,16 +890,14 @@ export default function Home() {
                 <video
                   src={URL.createObjectURL(selectedFile)}
                   controls
-                  className={`rounded-xl shadow-lg max-h-64 w-auto border mx-auto block ${
-                    isDarkMode ? "border-gray-600" : "border-gray-300"
-                  }`}
+                  className={`rounded-xl shadow-lg max-h-64 w-auto border mx-auto block ${isDarkMode ? "border-gray-600" : "border-gray-300"
+                    }`}
                 />
               </div>
               <div className="text-center w-full">
                 <p
-                  className={`text-sm font-semibold ${
-                    isDarkMode ? "text-gray-300" : "text-[#374151]"
-                  }`}
+                  className={`text-sm font-semibold ${isDarkMode ? "text-gray-300" : "text-[#374151]"
+                    }`}
                 >
                   {selectedFile.name}
                 </p>
@@ -954,25 +917,23 @@ export default function Home() {
           {/* Original | Summary Toggle */}
           <div className="flex items-center gap-1 mr-8">
             <button
-              className={`px-6 py-3 rounded-l-xl border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultMode === "original"
+              className={`px-6 py-3 rounded-l-xl border-2 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${resultMode === "original"
                   ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : isDarkMode
-                  ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
-                  : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]"
-              }`}
+                    ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+                    : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]"
+                }`}
               onClick={() => setResultMode("original")}
             >
               {t.original}
             </button>
             <button
-              className={`px-6 py-3 rounded-r-xl border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                resultMode === "summary"
+              className={`px-6 py-3 rounded-r-xl border-2 border-l-0 font-semibold text-lg transition-all duration-200 shadow-md hover:shadow-lg ${resultMode === "summary"
                   ? "bg-red-400 text-white border-red-400 shadow-red-400/25"
                   : isDarkMode
-                  ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
-                  : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]"
-              }`}
+                    ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+                    : "bg-white text-[#374151] border-[#e5e7eb] hover:bg-[#f1f5f9]"
+                }`}
               onClick={() => setResultMode("summary")}
             >
               {t.summary}
@@ -984,18 +945,16 @@ export default function Home() {
       {resultMode === "original" && (
         <div className={`w-full max-w-7xl mx-auto`}>
           <div
-            className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
-              isDarkMode
+            className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${isDarkMode
                 ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 text-white shadow-gray-900/50"
                 : "bg-gradient-to-br from-white to-[#f7f9fb] border-[#e5e7eb] text-[#222] shadow-[#e5e7eb]/50"
-            }`}
+              }`}
           >
             {/* Header with icon */}
             <div className="flex items-center gap-3 mb-6">
               <div
-                className={`p-2 rounded-full ${
-                  isDarkMode ? "bg-blue-600/20" : "bg-blue-100"
-                }`}
+                className={`p-2 rounded-full ${isDarkMode ? "bg-blue-600/20" : "bg-blue-100"
+                  }`}
               >
                 <svg
                   className="w-6 h-6 text-blue-500"
@@ -1016,23 +975,21 @@ export default function Home() {
 
             {/* Content */}
             <div
-              className={`p-6 rounded-2xl ${
-                isDarkMode ? "bg-gray-700/50" : "bg-[#f1f5f9]"
-              }`}
+              className={`p-6 rounded-2xl ${isDarkMode ? "bg-gray-700/50" : "bg-[#f1f5f9]"
+                }`}
             >
               <div className="prose prose-lg max-w-none">
                 <p
-                  className={`text-lg leading-relaxed whitespace-pre-wrap ${
-                    isDarkMode ? "text-gray-100" : "text-[#374151]"
-                  }`}
+                  className={`text-lg leading-relaxed whitespace-pre-wrap ${isDarkMode ? "text-gray-100" : "text-[#374151]"
+                    }`}
                 >
                   {transcriptionOriginal
                     ? allTranslations[resultLang] || transcriptionOriginal
                     : resultLang === "en"
-                    ? "This is a demo transcription result. Upload a video file to see the actual transcription of your content. The transcription will appear here with proper formatting and structure."
-                    : resultLang === "zh"
-                    ? "这是一个演示转录结果。上传视频文件以查看您内容的实际转录。转录将在此处显示，具有适当的格式和结构。"
-                    : "これはデモの文字起こし結果です。ビデオファイルをアップロードして、コンテンツの実際の文字起こしを確認してください。文字起こしは適切なフォーマットと構造でここに表示されます。"}
+                      ? "This is a demo transcription result. Upload a video file to see the actual transcription of your content. The transcription will appear here with proper formatting and structure."
+                      : resultLang === "zh"
+                        ? "这是一个演示转录结果。上传视频文件以查看您内容的实际转录。转录将在此处显示，具有适当的格式和结构。"
+                        : "これはデモの文字起こし結果です。ビデオファイルをアップロードして、コンテンツの実際の文字起こしを確認してください。文字起こしは適切なフォーマットと構造でここに表示されます。"}
                 </p>
               </div>
             </div>
@@ -1057,11 +1014,10 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    isDarkMode
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${isDarkMode
                       ? "bg-blue-600/20 text-blue-300"
                       : "bg-[#e8f0fe] text-[#2563eb]"
-                  }`}
+                    }`}
                 >
                   {resultLang.toUpperCase()}
                 </span>
@@ -1073,18 +1029,16 @@ export default function Home() {
       {resultMode === "summary" && (
         <div className={`w-full max-w-7xl mx-auto`}>
           <div
-            className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${
-              isDarkMode
+            className={`p-8 rounded-3xl shadow-xl border-2 transition-all duration-300 ${isDarkMode
                 ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 text-white shadow-gray-900/50"
                 : "bg-gradient-to-br from-white to-[#f7f9fb] border-[#e5e7eb] text-[#222] shadow-[#e5e7eb]/50"
-            }`}
+              }`}
           >
             {/* Header with icon */}
             <div className="flex items-center gap-3 mb-6">
               <div
-                className={`p-2 rounded-full ${
-                  isDarkMode ? "bg-green-600/20" : "bg-green-100"
-                }`}
+                className={`p-2 rounded-full ${isDarkMode ? "bg-green-600/20" : "bg-green-100"
+                  }`}
               >
                 <svg
                   className="w-6 h-6 text-green-500"
@@ -1105,23 +1059,21 @@ export default function Home() {
 
             {/* Content */}
             <div
-              className={`p-6 rounded-2xl ${
-                isDarkMode ? "bg-gray-700/50" : "bg-[#f1f5f9]"
-              }`}
+              className={`p-6 rounded-2xl ${isDarkMode ? "bg-gray-700/50" : "bg-[#f1f5f9]"
+                }`}
             >
               <div className="prose prose-lg max-w-none">
                 <div
-                  className={`text-lg leading-relaxed whitespace-pre-wrap ${
-                    isDarkMode ? "text-gray-100" : "text-[#374151]"
-                  }`}
+                  className={`text-lg leading-relaxed whitespace-pre-wrap ${isDarkMode ? "text-gray-100" : "text-[#374151]"
+                    }`}
                 >
                   {allSummaries[resultLang] || transcriptionSummary
                     ? allSummaries[resultLang] || transcriptionSummary
                     : resultLang === "en"
-                    ? "This is a demo summary result. Upload a video file to see the actual summary of your content. The summary will provide a concise overview of the main points and key information from your video."
-                    : resultLang === "zh"
-                    ? "这是一个演示总结结果。上传视频文件以查看您内容的实际总结。总结将提供视频中要点和关键信息的简明概述。"
-                    : "これはデモの要約結果です。ビデオファイルをアップロードして、コンテンツの実際の要約を確認してください。要約は、ビデオの要点と重要な情報の簡潔な概要を提供します。"}
+                      ? "This is a demo summary result. Upload a video file to see the actual summary of your content. The summary will provide a concise overview of the main points and key information from your video."
+                      : resultLang === "zh"
+                        ? "这是一个演示总结结果。上传视频文件以查看您内容的实际总结。总结将提供视频中要点和关键信息的简明概述。"
+                        : "これはデモの要約結果です。ビデオファイルをアップロードして、コンテンツの実際の要約を確認してください。要約は、ビデオの要点と重要な情報の簡潔な概要を提供します。"}
                 </div>
               </div>
             </div>
@@ -1146,11 +1098,10 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    isDarkMode
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${isDarkMode
                       ? "bg-green-600/20 text-green-300"
                       : "bg-[#e7fbe9] text-[#22c55e]"
-                  }`}
+                    }`}
                 >
                   {resultLang.toUpperCase()}
                 </span>
