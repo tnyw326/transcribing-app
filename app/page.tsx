@@ -26,6 +26,9 @@ import ReactMarkdown from 'react-markdown';
       transcriptionSummary: "Summary Result:",
       transcriptionSummarySubtitle: "AI-powered content summary with key insights",
       languageSelector: "Please select the language of the input and output video.",
+      importantNote: "Important Note:",
+      pleaseSelectLanguage: "Please select a language that has captions available for the video.",
+      ifSelectedLanguageNotAvailable: "If your selected language isn't available, the result will be in English or the first available caption language.",
       inputLanguage: "Input Language",
       outputLanguage: "Output Language",
       original: "Original",
@@ -56,6 +59,9 @@ import ReactMarkdown from 'react-markdown';
       transcriptionSummary: "总结结果：",
       transcriptionSummarySubtitle: "AI生成的内容总结，包含关键见解",
       languageSelector: "请选择输入和输出视频的语言。",
+      importantNote: "重要提示：",
+      pleaseSelectLanguage: "请选择视频有字幕的语言。",
+      ifSelectedLanguageNotAvailable: "如果选择的语言没有字幕，英语或第一个可用的字幕语言显示。",
       inputLanguage: "视频语言",
       outputLanguage: "输出语言",
       original: "原文",
@@ -86,6 +92,9 @@ import ReactMarkdown from 'react-markdown';
       transcriptionSubtitle: "Markdown形式での完全な文字起こし結果",
       transcriptionSummarySubtitle: "AIによるコンテンツ要約、重要な洞察",
       languageSelector: "動画の入力言語と出力言語を選択してください。",
+      importantNote: "重要な注意事項：",
+      pleaseSelectLanguage: "動画に字幕がある言語を選択してください。",
+      ifSelectedLanguageNotAvailable: "選択した言語に字幕がない場合、英語または最初の利用可能な字幕言語で表示されます。",
       inputLanguage: "入力言語",
       outputLanguage: "出力言語",
       original: "原文",
@@ -1063,10 +1072,10 @@ export default function Home() {
                     : "bg-gray-100 text-black border border-gray-300"
                   }`}
               >
-                <div className="font-semibold mb-2 text-blue-500">Important Note:</div>
+                <div className="font-semibold mb-2 text-blue-500">{t.importantNote}</div>
                 <div className="space-y-2">
-                  <p>Please select a language that has captions available for the video.</p>
-                  <p>If your selected language isn't available, the result will be in English or the first available caption language.</p>
+                  <p>{t.pleaseSelectLanguage}</p>
+                  <p>{t.ifSelectedLanguageNotAvailable}</p>
                 </div>
                 <div
                   className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${isDarkMode ? "border-t-gray-800" : "border-t-gray-100"
@@ -1448,7 +1457,7 @@ export default function Home() {
                     ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 border border-blue-500/30' 
                     : 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border border-blue-300/50'
                 }`}>
-                  {resultLang.toUpperCase()}
+                  {selectedLanguage.toUpperCase()}
                 </span>
                 <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1649,7 +1658,7 @@ export default function Home() {
                     ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 text-green-300 border border-green-500/30' 
                     : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300/50'
                 }`}>
-                  {resultLang.toUpperCase()}
+                  {selectedLanguage.toUpperCase()}
                 </span>
                 <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'}`}>
                   <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
