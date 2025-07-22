@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Tinos, Lusitana } from "next/font/google";
 import "./globals.css";
+import Navbar from "./components/Navbar";
+import ThemeProvider from "./context/ThemeProvider";
+import LanguageProvider from "./context/LanguageProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +28,7 @@ const lusitana = Lusitana({
 });
 
 export const metadata: Metadata = {
-  title: "transcribe your videos"
+  title: "transcribe your videos",
 };
 
 export default function RootLayout({
@@ -38,7 +41,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${tinos.variable} ${lusitana.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider>
+          <LanguageProvider>
+            <Navbar />
+            {children}
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
