@@ -433,6 +433,10 @@ export default function Home() {
       setAllSummaries({});
       setIsUserVideo(true);
       setIsYouTubeVideo(false);
+      // Clear YouTube URL input when video is uploaded
+      if (urlInputRef.current) {
+        urlInputRef.current.value = '';
+      }
     } else {
       alert(t.pleaseSelectValidVideo);
     }
@@ -450,6 +454,10 @@ export default function Home() {
       setAllSummaries({});
       setIsUserVideo(true);
       setIsYouTubeVideo(false);
+      // Clear YouTube URL input when video is uploaded
+      if (urlInputRef.current) {
+        urlInputRef.current.value = '';
+      }
     } else if (file) {
       alert(t.pleaseSelectValidVideo);
     }
