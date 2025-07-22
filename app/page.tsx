@@ -19,7 +19,7 @@ import ReactMarkdown from 'react-markdown';
       supportedFormats: "Supported formats: mp4, mov, avi, mkv, etc.",
       transcribeYouTube: "Transcribe a YouTube Video",
       pasteYouTubeLink: "Paste YouTube link here",
-      pasteYouTubeDescription: "Paste a YouTube link to transcribe its audio.",
+      pasteYouTubeDescription: "Paste YouTube link to transcribe.",
       pleaseSelectValidVideo: "Please select a valid video file",
       transcriptionOriginal: "Transcription Result:",
       transcriptionSubtitle: "Full transcription with markdown formatting",
@@ -791,7 +791,7 @@ export default function Home() {
       <div className={`flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-3 sm:gap-4 lg:gap-5 px-2 sm:px-4 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>
         {/* Video File Card */}
         <div
-          className={`flex flex-col items-center justify-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 lg:gap-5 relative p-3 sm:p-4 lg:p-6 border-4 border-dotted transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 lg:gap-5 relative p-3 sm:p-4 lg:p-6 pb-20 sm:pb-24 lg:pb-28 border-4 border-dotted transition-colors duration-200 ${
             isDragOver
               ? isDarkMode 
                 ? 'border-blue-400 bg-blue-900/20' 
@@ -982,29 +982,35 @@ export default function Home() {
               </div>
             )}
             
-            {/* Spacer to push button to bottom 20% */}
-            <div className="flex-1"></div>
-            <button
-              onClick={selectedFile ? handleTranscribe : handleUploadClick}
-              className={`text-white p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
-                selectedFile
-                  ? 'bg-[#22c55e] hover:bg-[#16a34a]'
-                  : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
-              } ${isTranscribingVideo ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
-              disabled={isTranscribingVideo}
-            >
-              {isTranscribingVideo && (
-                <div className="relative">
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {/* Ripple effect */}
-                  <div className="absolute inset-0 rounded-full bg-white/20 animate-ping"></div>
+            {/* Fixed bottom section for button and label */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={selectedFile ? handleTranscribe : handleUploadClick}
+                  className={`text-white p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
+                    selectedFile
+                      ? 'bg-[#22c55e] hover:bg-[#16a34a]'
+                      : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
+                  } ${isTranscribingVideo ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
+                  disabled={isTranscribingVideo}
+                >
+                  {isTranscribingVideo && (
+                    <div className="relative">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {/* Ripple effect */}
+                      <div className="absolute inset-0 rounded-full bg-white/20 animate-ping"></div>
+                    </div>
+                  )}
+                  {isTranscribingVideo ? t.transcribing : selectedFile ? t.transcribe : t.upload}
+                </button>
+                <div className="w-full flex justify-center">
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.supportedFormats}</p>
                 </div>
-              )}
-              {isTranscribingVideo ? t.transcribing : selectedFile ? t.transcribe : t.upload}
-            </button>
+              </div>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -1012,13 +1018,10 @@ export default function Home() {
               onChange={handleFileSelect}
               className="hidden"
             />
-            <div className="w-full flex justify-center mt-3 sm:mt-5">
-              <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.supportedFormats}</p>
-            </div>
           </div>
         </div>
         {/* YouTube Card */}
-        <div className={`flex flex-col items-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 relative p-3 sm:p-4 lg:p-6 border-4 ${
+        <div className={`flex flex-col items-center w-full ${(isVideoUploaded || isYouTubeVideo) ? 'lg:w-1/3' : 'lg:w-1/2'} h-[400px] sm:h-[450px] lg:h-[485px] mb-3 sm:mb-5 lg:mb-0 rounded-2xl sm:rounded-3xl gap-3 sm:gap-4 relative p-3 sm:p-4 lg:p-6 pb-20 sm:pb-24 lg:pb-28 border-4 ${
           isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-[#e5e7eb] shadow-lg'
         }`}>
           <h2 className={`text-xl sm:text-2xl md:text-3xl font-bold pt-6 sm:pt-8 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeYouTube}</h2>
@@ -1149,26 +1152,27 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Spacer to push button to bottom */}
-          <div className="flex-1"></div>
-          <div className="flex flex-col items-center gap-2">
-            <button
-              className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-1 text-sm sm:text-base ${
-                isTranscribingYouTube ? 'animate-pulse' : ''
-              }`}
-              onClick={handleTranscribeYouTube}
-              disabled={isTranscribingYouTube}
-            >
-              {isTranscribingYouTube && (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              )}
-              {isTranscribingYouTube ? t.transcribing : t.transcribe}
-            </button>
-            <div className="w-full flex justify-center px-2">
-              <p className={`text-xs text-center break-words ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.pasteYouTubeDescription}</p>
+          {/* Fixed bottom section for button and label */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 lg:p-6">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-1 text-sm sm:text-base ${
+                  isTranscribingYouTube ? 'animate-pulse' : ''
+                }`}
+                onClick={handleTranscribeYouTube}
+                disabled={isTranscribingYouTube}
+              >
+                {isTranscribingYouTube && (
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {isTranscribingYouTube ? t.transcribing : t.transcribe}
+              </button>
+              <div className="w-full flex justify-center px-2">
+                <p className={`text-xs text-center break-words ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.pasteYouTubeDescription}</p>
+              </div>
             </div>
           </div>
         </div>
