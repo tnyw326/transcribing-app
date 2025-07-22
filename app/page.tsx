@@ -22,12 +22,17 @@ import ReactMarkdown from 'react-markdown';
       pasteYouTubeDescription: "Paste a YouTube link to transcribe its audio.",
       pleaseSelectValidVideo: "Please select a valid video file",
       transcriptionOriginal: "Transcription Result:",
+      transcriptionSubtitle: "Full transcription with markdown formatting",
       transcriptionSummary: "Summary Result:",
+      transcriptionSummarySubtitle: "AI-powered content summary with key insights",
       languageSelector: "Please select the language of the input and output video.",
       inputLanguage: "Input Language",
       outputLanguage: "Output Language",
       original: "Original",
       summary: "Summary",
+      copyLabel: "Copy",
+      generatedAt: "Generated at",
+      generated: "Generated",
       en: "EN",
       zh: "CH",
       ja: "JA"
@@ -47,12 +52,17 @@ import ReactMarkdown from 'react-markdown';
       pasteYouTubeDescription: "粘贴YouTube链接以转录其音频。",
       pleaseSelectValidVideo: "请选择视频格式",
       transcriptionOriginal: "转录结果：",
+      transcriptionSubtitle: "完整的转录结果，支持markdown格式",
       transcriptionSummary: "总结结果：",
+      transcriptionSummarySubtitle: "AI生成的内容总结，包含关键见解",
       languageSelector: "请选择输入和输出视频的语言。",
       inputLanguage: "视频语言",
       outputLanguage: "输出语言",
       original: "原文",
       summary: "总结",
+      copyLabel: "复制",
+      generatedAt: "生成于",
+      generated: "生成",
       en: "英語",
       zh: "中文",
       ja: "日语"
@@ -73,11 +83,16 @@ import ReactMarkdown from 'react-markdown';
       pleaseSelectValidVideo: "有効な動画ファイルを選択してください",
       transcriptionOriginal: "文字起こし：",
       transcriptionSummary: "要約：",
+      transcriptionSubtitle: "Markdown形式での完全な文字起こし結果",
+      transcriptionSummarySubtitle: "AIによるコンテンツ要約、重要な洞察",
       languageSelector: "動画の入力言語と出力言語を選択してください。",
       inputLanguage: "入力言語",
       outputLanguage: "出力言語",
       original: "原文",
       summary: "要約",
+      copyLabel: "コピー",
+      generatedAt: "生成時間",
+      generated: "生成",
       en: "英語",
       zh: "中国語",
       ja: "日本語"
@@ -1279,11 +1294,11 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-xl sm:text-2xl md:text-3xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h3 className="font-bold text-xl sm:text-2xl md:text-3xl text-left bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     {t.transcriptionOriginal}
                   </h3>
-                  <p className={`text-xs sm:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Full transcription with markdown formatting
+                  <p className={`text-xs sm:text-sm mt-1 text-left ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {t.transcriptionSubtitle}
                   </p>
                 </div>
               </div>
@@ -1346,7 +1361,7 @@ export default function Home() {
                       <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      <span>Copy</span>
+                      <span>{t.copyLabel}</span>
                     </>
                   )}
                 </button>
@@ -1424,7 +1439,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {currentTime ? `Generated at ${currentTime}` : "Generated"}
+                  {currentTime ? `${t.generatedAt} ${currentTime}` : t.generated}
                 </span>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
@@ -1465,11 +1480,11 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-xl sm:text-2xl md:text-3xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                  <h3 className="font-bold text-xl sm:text-2xl md:text-3xl text-left bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                     {t.transcriptionSummary}
                   </h3>
-                  <p className={`text-xs sm:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    AI-powered content summary with key insights
+                  <p className={`text-xs sm:text-sm mt-1 text-left ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {t.transcriptionSummarySubtitle}
                   </p>
                 </div>
               </div>
@@ -1501,7 +1516,7 @@ export default function Home() {
                     <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <span>Copy</span>
+                    <span>{t.copyLabel}</span>
                   </>
                 )}
               </button>
@@ -1625,7 +1640,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {currentTime ? `Generated at ${currentTime}` : "Generated"}
+                  {currentTime ? `${t.generatedAt} ${currentTime}` : t.generated}
                 </span>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
