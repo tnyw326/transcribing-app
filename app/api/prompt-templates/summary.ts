@@ -1,3 +1,5 @@
+import { getLanguageName } from '../utils/languageMap';
+
 interface SummaryPromptParams {
   transcript: string;
   resultMode: string;
@@ -12,28 +14,28 @@ export function createSummaryPrompt({
   videoTitle
 }: SummaryPromptParams): string {
   // Determine language
-  const language = resultLang === 'en' ? 'English' : 
-                   resultLang === 'ja' ? 'Japanese' : 
-                   resultLang === 'zh' ? 'Chinese' : 
-                   'the same language as the transcript';
+  const language = getLanguageName(resultLang);
 
-  return `You are a helpful assistant that summarizes YouTube videos based on their transcript.
+  return `You are a helpful assistant that summarizes videos based on their transcript.
 
 Here is the transcript of the video:
 """
 ${transcript}
 """
 
-Please provide a summary of the video that:
-- Captures the main points and structure
-- Omits filler or unrelated content
-- Uses the most appropriate format (paragraph, bullet points, or numbered steps) based on the content
-- Has an appropriate length that effectively conveys the key information
-- Is written in ${language}
-- Is appropriate for an audience that wants a quick overview
-- Does NOT include any introductory text or explanations
+Please provide a comprehensive summary of the video. Your summary should:
 
-The video title is: "${videoTitle}".
+## Content Requirements:
+- Capture the main points and structure of the video
+- Highlight key takeaways and important information
+- Use appropriate length that effectively conveys the key information
+- Write in ${language}
+- Be appropriate for an audience that wants a quick overview
+- Include a brief overview at the beginning
+- Structure with main sections and subsections as needed
 
-Provide ONLY the summary content without any introductory sentences like "Here's a summary" or similar phrases. Start directly with the summary content.`;
+## Video Information:
+- Title: "${videoTitle}"
+
+Provide ONLY the summary content in ${language} without any introductory text. Start directly with the summary.`;
 } 

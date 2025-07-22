@@ -1,12 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { createSummaryPrompt } from '../prompt-templates/summary';
 import { createTranslationPrompt } from '../prompt-templates/translation';
+import { createTranscriptionFormattingPrompt } from '../prompt-templates/transcription';
 import { logger } from '../utils/logger';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// Constants
+const SUPPORTED_TYPES = [
+  'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/aac', 'audio/ogg', 'audio/webm',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'
+];
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+
+// Helper functions
+const getWhisperLanguage = (inputLanguage: string): string => {
+  return inputLanguage === 'zh' ? 'zh' : inputLanguage === 'ja' ? 'ja' : 'en';
+};
+
+const createLogTranscriptionData = (
+  fileName: string,
+  fileSize: number,
+  inputLanguage: string,
+  outputLanguage: string,
+  resultMode: string,
+  resultLang: string,
+  transcription: string,
+  translations: { [key: string]: string },
+  apiResponses: any,
+  processingTime: number,
+  status: 'success' | 'error'
+) => ({
+  fileName,
+  fileSize,
+  inputLanguage,
+  outputLanguage,
+  resultMode,
+  resultLang,
+  transcription: {
+    original: transcription,
+    english: outputLanguage === 'en' ? translations[outputLanguage] || transcription : '',
+    chinese: outputLanguage === 'zh' ? translations[outputLanguage] || transcription : '',
+    japanese: outputLanguage === 'ja' ? translations[outputLanguage] || transcription : ''
+  },
+  summary: {
+    english: '',
+    chinese: '',
+    japanese: ''
+  },
+  apiResponses,
+  processingTime,
+  status
+});
+
+const validateRequest = (file: File | null): NextResponse | null => {
+  if (!file) {
+    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  }
+
+  if (!SUPPORTED_TYPES.includes(file.type)) {
+    return NextResponse.json({ 
+      error: `Unsupported file type: ${file.type}. Supported types: ${SUPPORTED_TYPES.join(', ')}` 
+    }, { status: 400 });
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ 
+      error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum size is 25MB.` 
+    }, { status: 400 });
+  }
+
+  return null;
+};
+
+const formatTranscription = async (text: string, language: string) => {
+  try {
+    // Use the formatting prompt directly instead of making an HTTP request
+    const formattingPrompt = createTranscriptionFormattingPrompt({
+      text,
+      language
+    });
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: formattingPrompt }],
+    });
+
+    return response.choices[0].message.content || text;
+  } catch (error) {
+    console.error('Error formatting transcription:', error);
+    return text;
+  }
+};
+
+const translateText = async (text: string, sourceLanguage: string, targetLanguage: string) => {
+  if (sourceLanguage === targetLanguage) {
+    return text;
+  }
+
+  const translationPrompt = createTranslationPrompt({
+    text,
+    sourceLanguage,
+    targetLanguage
+  });
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [{ role: "user", content: translationPrompt }],
+  });
+
+  return response.choices[0].message.content || text;
+};
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -18,6 +124,7 @@ export async function POST(request: NextRequest) {
   let resultLang = '';
 
   try {
+    // Parse form data
     const formData = await request.formData();
     file = formData.get('file') as File;
     inputLanguage = formData.get('inputLanguage') as string;
@@ -25,156 +132,75 @@ export async function POST(request: NextRequest) {
     resultMode = formData.get('resultMode') as string;
     resultLang = formData.get('resultLang') as string;
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
+    // Validate request
+    const validationError = validateRequest(file);
+    if (validationError) return validationError;
 
-    // Validate file type
-    const supportedTypes = [
-      'audio/mpeg',
-      'audio/mp3',
-      'audio/wav',
-      'audio/m4a',
-      'audio/aac',
-      'audio/ogg',
-      'audio/webm',
-      'video/mp4',
-      'video/webm',
-      'video/ogg',
-      'video/quicktime',
-      'video/x-msvideo'
-    ];
+    console.log(`Processing file: ${file!.name}, type: ${file!.type}, size: ${(file!.size / 1024 / 1024).toFixed(2)}MB`);
 
-    if (!supportedTypes.includes(file.type)) {
-      return NextResponse.json({ 
-        error: `Unsupported file type: ${file.type}. Supported types: ${supportedTypes.join(', ')}` 
-      }, { status: 400 });
-    }
-
-    // Check file size (OpenAI has a 25MB limit)
-    const maxSize = 25 * 1024 * 1024; // 25MB
-    if (file.size > maxSize) {
-      return NextResponse.json({ 
-        error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum size is 25MB.` 
-      }, { status: 400 });
-    }
-
-    console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
+    // Prepare file for OpenAI
+    const bytes = await file!.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const openaiFile = new File([buffer], file!.name, { type: file!.type });
 
-    // Create a file object for OpenAI with proper MIME type
-    const openaiFile = new File([buffer], file.name, { 
-      type: file.type 
-    });
+    let rawTranscription = '';
+    let formattedTranscription = '';
+    let translations: { [key: string]: string } = {};
+    let unformattedTranslations: { [key: string]: string } = {};
+    let apiResponses: any = {};
 
     console.log('Sending file to OpenAI for transcription...');
 
-    // 1. Transcribe audio with OpenAI Whisper
+    // Step 1: Transcribe audio
     const transcriptionResponse = await openai.audio.transcriptions.create({
       file: openaiFile,
-      model: "whisper-1", // Use whisper-1 instead of gpt-4o-transcribe for better compatibility
-      language: inputLanguage === 'zh' ? 'zh' : inputLanguage === 'ja' ? 'ja' : 'en',
+      model: "whisper-1",
+      language: getWhisperLanguage(inputLanguage),
       response_format: "text",
     });
 
-    const transcription = transcriptionResponse;
+    rawTranscription = transcriptionResponse;
     console.log('Transcription completed successfully');
 
-    // 2. Translate to all three languages
-    console.log('Translating to all languages...');
-    const languages = ['en', 'zh', 'ja'];
-    const translations: { [key: string]: string } = {};
-    const translationResponses: { [key: string]: any } = {};
+    // Step 2: Format the original transcription
+    console.log('Formatting transcription...');
+    formattedTranscription = await formatTranscription(rawTranscription, inputLanguage);
+    console.log('Transcription formatting completed');
 
-    for (const lang of languages) {
-      if (lang !== inputLanguage) {
-        console.log(`Translating from ${inputLanguage} to ${lang}...`);
-        const translationPrompt = createTranslationPrompt({
-          text: transcription,
-          sourceLanguage: inputLanguage,
-          targetLanguage: lang
-        });
-        const translationResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [{ role: "user", content: translationPrompt }],
-        });
-        translations[lang] = translationResponse.choices[0].message.content || '';
-        translationResponses[lang] = translationResponse;
-        console.log(`Translation to ${lang} completed`);
-      } else {
-        translations[lang] = transcription;
-      }
+    // Translate if needed
+    if (outputLanguage !== inputLanguage) {
+      console.log(`Translating formatted text to ${outputLanguage}...`);
+      translations[outputLanguage] = await translateText(formattedTranscription, inputLanguage, outputLanguage);
+      
+      console.log(`Translating unformatted text to ${outputLanguage}...`);
+      unformattedTranslations[outputLanguage] = await translateText(rawTranscription, inputLanguage, outputLanguage);
+      
+      apiResponses.translation = { [outputLanguage]: 'translated' };
+      console.log(`Translation to ${outputLanguage} completed`);
+    } else {
+      translations[outputLanguage] = formattedTranscription;
+      unformattedTranslations[outputLanguage] = rawTranscription;
     }
 
-    // 3. Create summaries in all three languages
-    console.log('Generating summaries in all languages...');
-    const summaries: { [key: string]: string } = {};
-    const summaryResponses: { [key: string]: any } = {};
+    apiResponses.whisper = transcriptionResponse;
+    apiResponses.summary = {};
 
-    for (const lang of languages) {
-      console.log(`Generating summary in ${lang}...`);
-      const summaryPrompt = createSummaryPrompt({
-        transcript: translations[lang],
-        resultMode,
-        resultLang: lang,
-        videoTitle: file.name
-      });
-
-      const summaryResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: summaryPrompt }],
-      });
-      summaries[lang] = summaryResponse.choices[0].message.content || '';
-      summaryResponses[lang] = summaryResponse;
-      console.log(`Summary in ${lang} completed`);
-    }
-
-    // 4. Log the entire process
+    // Log and return transcription results
     const processingTime = Date.now() - startTime;
-    requestId = await logger.logTranscription({
-      fileName: file.name,
-      fileSize: file.size,
-      inputLanguage,
-      outputLanguage,
-      resultMode,
-      resultLang,
-      transcription: {
-        original: transcription,
-        english: translations.en,
-        chinese: translations.zh,
-        japanese: translations.ja
-      },
-      summary: {
-        english: summaries.en,
-        chinese: summaries.zh,
-        japanese: summaries.ja
-      },
-      apiResponses: {
-        whisper: transcriptionResponse,
-        translation: translationResponses,
-        summary: summaryResponses
-      },
-      processingTime,
-      status: 'success'
-    });
+    requestId = await logger.logTranscription(
+      createLogTranscriptionData(
+        file!.name, file!.size, inputLanguage, outputLanguage, resultMode, resultLang,
+        formattedTranscription, translations, apiResponses, processingTime, 'success'
+      )
+    );
 
     return NextResponse.json({ 
       original: translations[outputLanguage],
-      summary: summaries[outputLanguage],
-      translations: {
-        en: translations.en,
-        zh: translations.zh,
-        ja: translations.ja
-      },
-      summaries: {
-        en: summaries.en,
-        zh: summaries.zh,
-        ja: summaries.ja
-      },
-      language: inputLanguage === 'zh' ? 'zh' : inputLanguage === 'ja' ? 'ja' : 'en',
+      formatted: translations[outputLanguage],
+      unformatted: unformattedTranslations[outputLanguage],
+      translations: { [outputLanguage]: translations[outputLanguage] },
+      unformattedTranslations: { [outputLanguage]: unformattedTranslations[outputLanguage] },
+      language: getWhisperLanguage(inputLanguage),
       requestId
     });
 
@@ -188,11 +214,12 @@ export async function POST(request: NextRequest) {
         inputLanguage,
         outputLanguage,
         resultMode,
-        resultLang
+        resultLang,
+        operation: 'transcribe'
       });
     }
     
-    // Provide more specific error messages
+    // Provide specific error messages
     if (error.code === 'invalid_value' && error.param === 'file') {
       return NextResponse.json(
         { error: 'Audio file might be corrupted or unsupported. Please try a different file format.' }, 
@@ -212,38 +239,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
-
-/*
-export async function POST(req: NextRequest) {
-  const formData = await req.formData();
-  const file = formData.get('file') as File;
-
-  if (!file) {
-    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
-
-  if (!deepgramApiKey) {
-    console.error("❌ Missing API key");
-    return NextResponse.json({ error: "Missing API key" }, { status: 500 });
-  }
-
-  const response = await fetch('https://api.deepgram.com/v1/listen?punctuate=true', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Token ${deepgramApiKey!}`,
-      'Content-Type': file.type,
-    },
-    body: buffer,
-  });
-
-  const result = await response.json();
-  const transcript = result.results.channels[0].alternatives[0].transcript;
-
-  return NextResponse.json({ text: transcript });
 }
-*/
