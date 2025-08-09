@@ -43,3 +43,18 @@ next-env.d.ts
 # logs
 /logs
 *.log
+<<<<<<< HEAD
+=======
+
+# video and audio files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.ogg
+>>>>>>> 12c263ec205d55583334198daf33924f6bc3624d
