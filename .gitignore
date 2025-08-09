@@ -43,7 +43,6 @@ next-env.d.ts
 # logs
 /logs
 *.log
-
 # video and audio files
 *.mp4
 *.mov
@@ -55,3 +54,5 @@ next-env.d.ts
 *.m4a
 *.aac
 *.ogg
+
+/app/generated/prisma
