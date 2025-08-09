@@ -54,3 +54,5 @@ next-env.d.ts
 *.m4a
 *.aac
 *.ogg
+
+/app/generated/prisma
