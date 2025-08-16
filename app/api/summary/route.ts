@@ -21,12 +21,27 @@ export async function summarizeChunks(raw: string, send?: (ev: string, data: any
     send?.('progress', { stage: 'chunk-summary', done, total: chunks.length });
   }));
 
-  // reduce
+  // reduce with proper markdown formatting
   const final = (await openai.chat.completions.create({ 
     model: "gpt-4o",
     messages: [{ 
       role: "user", 
-      content: `Create a comprehensive summary from these partial summaries:\n\n${partials.join('\n\n')}` 
+      content: `Create a comprehensive summary from these partial summaries using proper markdown formatting:
+
+## Markdown Formatting Requirements:
+- Use **## headers** for major sections
+- Use **### subheaders** for subsections  
+- Use **bold text** for emphasis on key terms and important concepts
+- Use *italic text* for foreign words or technical terms
+- Use bullet points (• or -) for lists
+- Use numbered lists for step-by-step processes
+- Use > blockquotes for important quotes or highlights
+- Use \`code\` formatting for technical terms, names, or specific data
+
+Partial summaries:
+${partials.join('\n\n')}
+
+Provide ONLY the final summary with proper markdown formatting.` 
     }],
   })).choices[0].message?.content ?? '';
   

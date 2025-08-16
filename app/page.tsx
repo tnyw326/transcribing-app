@@ -32,6 +32,9 @@ import ReactMarkdown from 'react-markdown';
       ifSelectedLanguageNotAvailable: "If your selected language isn't available, the result will be in English or the first available caption language.",
       inputLanguage: "Input Language",
       outputLanguage: "Output Language",
+      autoDetect: "Auto-detect",
+      transcriptionAnimation: "Transcribing...",
+
       original: "Original",
       summary: "Summary",
       copyLabel: "Copy",
@@ -66,6 +69,8 @@ import ReactMarkdown from 'react-markdown';
       ifSelectedLanguageNotAvailable: "如果选择的语言没有字幕，英语或第一个可用的字幕语言显示。",
       inputLanguage: "视频语言",
       outputLanguage: "输出语言",
+      autoDetect: "自动检测",
+      transcriptionAnimation: "转录中...",
       original: "原文",
       summary: "总结",
       copyLabel: "复制",
@@ -100,11 +105,14 @@ import ReactMarkdown from 'react-markdown';
       ifSelectedLanguageNotAvailable: "選択した言語に字幕がない場合、英語または最初の利用可能な字幕言語で表示されます。",
       inputLanguage: "入力言語",
       outputLanguage: "出力言語",
+      autoDetect: "自動検出",
+
+      transcriptionAnimation: "文字起こし中...",
       original: "原文",
       summary: "要約",
       copyLabel: "コピー",
-      generatedAt: "生成時間",
-      generated: "生成",
+      generatedAt: "生成日時",
+      generated: "生成済み",
       en: "英語",
       zh: "中国語",
       ja: "日本語",
@@ -122,6 +130,7 @@ export default function Home() {
   const [isTranscribingVideo, setIsTranscribingVideo] = useState(false);
   const [isTranscribingYouTube, setIsTranscribingYouTube] = useState(false);
   const [transcriptionOriginal, setTranscriptionOriginal] = useState<string>("");
+  const [transcriptionRaw, setTranscriptionRaw] = useState<string>("");
   const [transcriptionSummary, setTranscriptionSummary] = useState<string>("");
   const [allTranslations, setAllTranslations] = useState<{[key: string]: string}>({});
   const [allUnformattedTranslations, setAllUnformattedTranslations] = useState<{[key: string]: string}>({});
@@ -174,6 +183,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [processingProgress, setProcessingProgress] = useState<{[key: string]: any}>({});
+  const [currentProcessingStage, setCurrentProcessingStage] = useState<string>(''); // 'transcribing', 'translating', 'formatting'
 
   // Sync dark mode with HTML class
   useEffect(() => {
@@ -206,90 +216,191 @@ export default function Home() {
 
 
   // Streaming process function
-  const processFile = async (file: File, inputLanguage: string, outputLanguage: string, translateTo?: string) => {
+  const processFile = async (file: File, inputLanguage: string, outputLanguage: string, summaryRequested: boolean = false) => {
     const form = new FormData();
     form.append('file', file);
-    form.append('inputLanguage', inputLanguage);
+    form.append('inputLanguage', inputLanguage); // This will be 'auto' for user videos
     form.append('outputLanguage', outputLanguage);
-    if (translateTo) form.append('translateTo', translateTo);
+    form.append('summaryRequested', summaryRequested.toString());
+    form.append('formatType', isFormatted ? 'markdown' : 'raw');
 
-    const res = await fetch('/api/process', { 
-      method: 'POST', 
-      body: form,
-      signal: processAbortController.current?.signal
-    });
-    
-    if (!res.ok) {
-      throw new Error(`Process failed: ${res.statusText}`);
+    if (processAbortController.current) {
+      processAbortController.current.abort();
     }
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    processAbortController.current = new AbortController();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+    try {
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        body: form,
+        signal: processAbortController.current.signal,
+      });
 
-      let idx;
-      while ((idx = buffer.indexOf('\n\n')) >= 0) {
-        const frame = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 2);
-        const lines = frame.split('\n');
-        let event = 'message', data = '';
-        for (const l of lines) {
-          if (l.startsWith('event:')) event = l.slice(6).trim();
-          if (l.startsWith('data:')) data += l.slice(5).trim();
-        }
-        if (data) {
-          try {
-            const parsedData = JSON.parse(data);
-            handleEvent(event, parsedData);
-          } catch (e) {
-            console.error('Error parsing SSE data:', e);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const frame = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          console.log('🔍 Raw SSE frame:', frame);
+          
+          const lines = frame.split('\n');
+          let event = 'message', data = '';
+          
+          for (const l of lines) {
+            if (l.startsWith('event:')) {
+              event = l.slice(6).trim();
+              console.log('📡 Event type:', event);
+            } else if (l.startsWith('data:')) {
+              data = l.slice(5).trim();
+              console.log('📦 Data received:', data);
+            }
+          }
+          
+          if (data) {
+            try {
+              const parsedData = JSON.parse(data);
+              handleEvent(event, parsedData);
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
           }
         }
       }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Request was aborted');
+      } else {
+        console.error('Error processing file:', error);
+        setProcessingStatus('Error processing file');
+      }
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus('');
     }
   };
 
   const handleEvent = (event: string, data: any) => {
-    console.log('SSE Event:', event, data);
+    console.log('🔍 SSE Event received:', event, data);
     
     switch (event) {
       case 'status':
+        console.log('📝 Setting status:', data.msg);
         setProcessingStatus(data.msg || 'Processing...');
+        // Determine current stage from status message
+        if (data.msg?.includes('Transcribing')) {
+          setCurrentProcessingStage('transcribing');
+        } else if (data.msg?.includes('Translating')) {
+          setCurrentProcessingStage('translating');
+        } else if (data.msg?.includes('Formatting')) {
+          setCurrentProcessingStage('formatting');
+                       } else if (data.msg?.includes('Generating summary')) {
+                 setCurrentProcessingStage('formatting');
+               }
         break;
       case 'progress':
+        console.log('🔄 Setting progress:', data);
         setProcessingProgress(prev => ({ ...prev, ...data }));
         break;
       case 'cached':
+        console.log('💾 Using cached result');
         setProcessingStatus('Using cached result...');
         break;
-      case 'done':
-        // Handle final result
-        if (data.transcript) {
-          setTranscriptionOriginal(data.formattedTranscript || data.transcript);
+      case 'transcribe':
+        console.log('🎯 Transcribe event:', data);
+        setCurrentProcessingStage('transcribing');
+        // Handle transcription step
+        if (data.transcriptText) {
+          console.log('📝 Setting transcription:', data.transcriptText.substring(0, 100) + '...');
+          setTranscriptionOriginal(data.transcriptText);
         }
-        if (data.summary) {
-          setTranscriptionSummary(data.summary);
-          setAllSummaries(prev => ({ ...prev, [data.language || videoOutputLanguage]: data.summary }));
+        if (data.detectedLanguage && data.inputLanguage === 'auto') {
+          setProcessingStatus(`Detected language: ${data.detectedLanguage}`);
+        }
+        break;
+      case 'translate':
+        console.log('🌐 Translate event:', data);
+        setCurrentProcessingStage('translating');
+        // Handle translation step
+        if (data.rawText) {
+          console.log('📝 Setting translated text:', data.rawText.substring(0, 100) + '...');
+          setTranscriptionRaw(data.rawText);
         }
         if (data.translation) {
-          setAllTranslations(prev => ({ ...prev, [data.translateTo]: data.translation }));
+          setAllTranslations(prev => ({ ...prev, [videoOutputLanguage]: data.translation }));
+        }
+        break;
+      case 'format':
+        console.log('✨ Format event:', data);
+        setCurrentProcessingStage('formatting');
+        // Handle formatting step - now we get both raw and markdown
+        if (data.markdownText) {
+          console.log('📝 Setting formatted text:', data.markdownText.substring(0, 100) + '...');
+          setTranscriptionOriginal(data.markdownText);
+        }
+        if (data.rawText) {
+          console.log('📝 Setting raw text:', data.rawText.substring(0, 100) + '...');
+          setTranscriptionRaw(data.rawText);
+        }
+        break;
+      case 'summarize':
+        console.log('📋 Summarize event:', data);
+        setCurrentProcessingStage('summarizing');
+        // Handle summary step
+        if (data.summaryText) {
+          console.log('📝 Setting summary:', data.summaryText.substring(0, 100) + '...');
+          setTranscriptionSummary(data.summaryText);
+          setAllSummaries(prev => ({ ...prev, [videoOutputLanguage]: data.summaryText }));
+          // Automatically switch to summary mode when summary is generated
+          setResultMode("summary");
+        }
+        break;
+      case 'done':
+        console.log('✅ Done event:', data);
+        setCurrentProcessingStage('');
+        // Handle final result
+        if (data.markdownText) {
+          console.log('📝 Final formatted text:', data.markdownText.substring(0, 100) + '...');
+          setTranscriptionOriginal(data.markdownText);
+        }
+        if (data.rawText) {
+          console.log('📝 Final raw text:', data.rawText.substring(0, 100) + '...');
+          setTranscriptionRaw(data.rawText);
+        }
+        if (data.summaryText) {
+          setTranscriptionSummary(data.summaryText);
+          setAllSummaries(prev => ({ ...prev, [data.outputLanguage || videoOutputLanguage]: data.summaryText }));
+        }
+        if (data.translation) {
+          setAllTranslations(prev => ({ ...prev, [data.outputLanguage || videoOutputLanguage]: data.translation }));
         }
         setIsProcessing(false);
-        setProcessingStatus('');
-        setProcessingProgress({});
+        setProcessingStatus('Processing complete!');
         break;
       case 'error':
-        console.error('Processing error:', data);
+        console.error('❌ Pipeline error:', data);
+        setCurrentProcessingStage('');
+        setProcessingStatus(`Error: ${data.message || 'Unknown error'}`);
         setIsProcessing(false);
-        setProcessingStatus('');
-        setProcessingProgress({});
-        alert(`Processing failed: ${data.message || 'Unknown error'}`);
         break;
+      default:
+        console.log('❓ Unhandled event:', event, data);
     }
   };
 
@@ -595,32 +706,9 @@ export default function Home() {
 
   // Function to reset all states to default
   const resetToDefault = () => {
-    // Abort any ongoing requests
-    if (transcribeAbortController.current) {
-      transcribeAbortController.current.abort();
-      transcribeAbortController.current = null;
-    }
-    if (summaryAbortController.current) {
-      summaryAbortController.current.abort();
-      summaryAbortController.current = null;
-    }
-    if (youtubeAbortController.current) {
-      youtubeAbortController.current.abort();
-      youtubeAbortController.current = null;
-    }
-    if (processAbortController.current) {
-      processAbortController.current.abort();
-      processAbortController.current = null;
-    }
-
-    setSelectedFile(null);
     setTranscriptionOriginal("");
+    setTranscriptionRaw("");
     setTranscriptionSummary("");
-    setIsFileSelected(false);
-    setIsTranscribingVideo(false);
-    setIsTranscribingYouTube(false);
-    setIsSummaryLoading(false);
-    setIsProcessing(false);
     setAllTranslations({});
     setAllUnformattedTranslations({});
     setAllSummaries({});
@@ -631,6 +719,8 @@ export default function Home() {
     setResultMode("original");
     setProcessingStatus('');
     setProcessingProgress({});
+    setIsProcessing(false);
+    setCurrentProcessingStage('');
   };
 
   const handleRemoveFile = () => {
@@ -652,6 +742,11 @@ export default function Home() {
     setIsTranscribingYouTube(false);
     setIsSummaryLoading(false);
     setIsProcessing(false);
+    setCurrentProcessingStage('');
+    
+    // Reset file selection
+    setSelectedFile(null);
+    setIsFileSelected(false);
     
     // Reset to default state
     resetToDefault();
@@ -671,6 +766,7 @@ export default function Home() {
 
     setIsProcessing(true);
     setTranscriptionOriginal("");
+    setTranscriptionRaw("");
     setTranscriptionSummary("");
     setAllTranslations({});
     setAllUnformattedTranslations({});
@@ -680,7 +776,7 @@ export default function Home() {
 
     try {
       // Use the new streaming process endpoint
-      await processFile(selectedFile, videoInputLanguage, videoOutputLanguage, videoOutputLanguage !== 'en' ? videoOutputLanguage : undefined);
+      await processFile(selectedFile, 'auto', videoOutputLanguage, false);
       
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -699,8 +795,8 @@ export default function Home() {
   const handleTranscribe = async () => {
     if (!selectedFile) return;
 
-    // If already transcribing, stop and reset
-    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading) {
+    // If already processing, stop and reset
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading || isProcessing) {
       resetToDefault();
       return;
     }
@@ -708,44 +804,18 @@ export default function Home() {
     // Create new AbortController for this request
     transcribeAbortController.current = new AbortController();
 
-    setIsTranscribingVideo(true);
+    setIsProcessing(true);
     setTranscriptionOriginal("");
+    setTranscriptionRaw("");
     setTranscriptionSummary("");
     setAllTranslations({});
     setAllUnformattedTranslations({});
     setAllSummaries({});
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('inputLanguage', videoInputLanguage);
-      formData.append('outputLanguage', videoOutputLanguage);
-      formData.append('resultMode', resultMode);
-      formData.append('resultLang', resultLang);
-
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-        signal: transcribeAbortController.current.signal,
-      });
-
-      if (response.status === 499) {
-        console.log('Transcription request was cancelled by user');
-        return;
-      }
+      // Use the new pipeline for transcription
+      await processFile(selectedFile, 'auto', videoOutputLanguage, false);
       
-      if (!response.ok) {
-        throw new Error('Transcription failed');
-      }
-
-      const data = await response.json();
-      console.log('API Response data:', data);
-      console.log('Original content:', data.original);
-      setTranscriptionOriginal(data.formatted || data.original);
-      // Set the translations for the selected output language
-      setAllTranslations(data.translations || {});
-      setAllUnformattedTranslations(data.unformattedTranslations || {});
-
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.log('Transcription request was cancelled');
@@ -754,7 +824,7 @@ export default function Home() {
       console.error('Transcription error:', error);
       alert('Transcription failed. Please try again.');
     } finally {
-      setIsTranscribingVideo(false);
+      setIsProcessing(false);
       transcribeAbortController.current = null;
     }
   };
@@ -768,14 +838,14 @@ export default function Home() {
     }
 
     // If already processing, stop and reset
-    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading) {
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading || isProcessing) {
       resetToDefault();
       return;
     }
 
     // Check if summary already exists for the current output language
     const existingSummary = allSummaries[videoOutputLanguage] || transcriptionSummary;
-    if (existingSummary) {
+    if (existingSummary && existingSummary.trim() !== "") {
       // If summary exists, just switch to summary mode without calling API
       setResultMode("summary");
       return;
@@ -784,44 +854,13 @@ export default function Home() {
     // Create new AbortController for this request
     summaryAbortController.current = new AbortController();
 
-    setIsSummaryLoading(true);
-    setTranscriptionSummary("");
-    setAllSummaries({});
+    setIsProcessing(true);
+    setProcessingStatus('Generating summary...');
 
     try {
-      // For user uploaded videos, use the new summary API
-      if (!selectedFile) {
-        throw new Error('No file selected');
-      }
+      // Use the pipeline with summary requested = true
+      await processFile(selectedFile, 'auto', videoOutputLanguage, true);
       
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('inputLanguage', videoInputLanguage);
-      formData.append('outputLanguage', videoOutputLanguage);
-      formData.append('resultMode', resultMode);
-      formData.append('resultLang', resultLang);
-      formData.append('transcriptionText', transcriptionOriginal);
-
-      const response = await fetch('/api/summary', {
-        method: 'POST',
-        body: formData,
-        signal: summaryAbortController.current.signal,
-      });
-
-      if (response.status === 499) {
-        console.log('Summary request was cancelled by user');
-        return;
-      }
-      
-      if (!response.ok) {
-        throw new Error('Summary generation failed');
-      }
-
-      const data = await response.json();
-      setTranscriptionSummary(data.summary);
-      // Set the summary for the selected output language
-      setAllSummaries(data.summaries || {});
-
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.log('Summary request was cancelled');
@@ -830,7 +869,8 @@ export default function Home() {
       console.error('Summary error:', error);
       alert('Summary generation failed. Please try again.');
     } finally {
-      setIsSummaryLoading(false);
+      setIsProcessing(false);
+      setProcessingStatus('');
       summaryAbortController.current = null;
     }
   };
@@ -1027,6 +1067,179 @@ export default function Home() {
     }
   };
 
+  // Dynamic Processing Animation Component
+  const ProcessingAnimation = ({ stage }: { stage: string }) => {
+    // Check if we're in summary mode
+    const isSummaryMode = resultMode === 'summary';
+    
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-6 sm:p-8">
+        {/* Main Title */}
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-8 sm:mb-12">
+          {isSummaryMode ? 'AI is Generating Summary' : 'AI is Processing Your Video'}
+        </h2>
+        
+        {/* Show single summary icon or three stage icons based on mode */}
+        {isSummaryMode ? (
+          // Single Summary Icon
+          <div className="flex flex-col items-center gap-4 mb-8 sm:mb-12">
+            <div className="relative p-4 sm:p-6 rounded-full bg-orange-100 dark:bg-orange-900/30">
+              <svg className="w-8 h-8 sm:w-12 sm:h-12 text-orange-600 dark:text-orange-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              {/* Floating particles for summarizing */}
+              <div className="absolute -top-2 -left-2 w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+              <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-orange-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="absolute -bottom-1 -left-1 w-1 h-1 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-sm sm:text-base text-orange-600 dark:text-orange-400">
+                Summarizing
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Creating concise summary
+              </p>
+            </div>
+          </div>
+        ) : (
+          // Three Stage Icons - All Visible Simultaneously
+          <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-12 mb-8 sm:mb-12">
+          {/* Transcribing Stage */}
+          <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${
+            stage === 'transcribing' ? 'scale-110 opacity-100' : 'scale-100 opacity-60'
+          }`}>
+            <div className={`relative p-4 sm:p-6 rounded-full ${
+              stage === 'transcribing' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-800'
+            }`}>
+              <svg className={`w-8 h-8 sm:w-12 sm:h-12 ${
+                stage === 'transcribing' ? 'text-blue-600 dark:text-blue-400 animate-pulse' : 'text-gray-400'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              {/* Floating particles for transcribing */}
+              {stage === 'transcribing' && (
+                <>
+                  <div className="absolute -top-2 -left-2 w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="absolute -bottom-1 -left-1 w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                </>
+              )}
+            </div>
+            <div className="text-center">
+              <h3 className={`font-semibold text-sm sm:text-base ${
+                stage === 'transcribing' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'
+              }`}>
+                Transcribing
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Converting speech to text
+              </p>
+            </div>
+          </div>
+
+          {/* Translating Stage */}
+          <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${
+            stage === 'translating' ? 'scale-110 opacity-100' : 'scale-100 opacity-60'
+          }`}>
+            <div className={`relative p-4 sm:p-6 rounded-full ${
+              stage === 'translating' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'
+            }`}>
+              <svg className={`w-8 h-8 sm:w-12 sm:h-12 ${
+                stage === 'translating' ? 'text-green-600 dark:text-green-400 animate-bounce' : 'text-gray-400'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {/* Floating particles for translating */}
+              {stage === 'translating' && (
+                <>
+                  <div className="absolute -top-2 -left-2 w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-green-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="absolute -bottom-1 -left-1 w-1 h-1 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                </>
+              )}
+            </div>
+            <div className="text-center">
+              <h3 className={`font-semibold text-sm sm:text-base ${
+                stage === 'translating' ? 'text-green-600 dark:text-green-400' : 'text-gray-500'
+              }`}>
+                Translating
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Converting between languages
+              </p>
+            </div>
+          </div>
+
+          {/* Formatting Stage */}
+          <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${
+            stage === 'formatting' ? 'scale-110 opacity-100' : 'scale-100 opacity-60'
+          }`}>
+            <div className={`relative p-4 sm:p-6 rounded-full ${
+              stage === 'formatting' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-800'
+            }`}>
+              <svg className={`w-8 h-8 sm:w-12 sm:h-12 ${
+                stage === 'formatting' ? 'text-purple-600 dark:text-purple-400 animate-pulse' : 'text-gray-400'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {/* Floating particles for formatting */}
+              {stage === 'formatting' && (
+                <>
+                  <div className="absolute -top-2 -left-2 w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="absolute -bottom-1 -left-1 w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                </>
+              )}
+            </div>
+            <div className="text-center">
+              <h3 className={`font-semibold text-sm sm:text-base ${
+                stage === 'formatting' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-500'
+              }`}>
+                Formatting
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Structuring content
+              </p>
+            </div>
+          </div>
+        </div>
+        )}
+
+
+
+        {/* Status Message */}
+        <div className="text-center">
+          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 font-medium">
+            {stage === 'transcribing' && t.transcriptionAnimation}
+            {stage === 'translating' && t.transcriptionAnimation}
+            {stage === 'formatting' && (resultMode === 'summary' ? 'Generating summary...' : t.transcriptionAnimation)}
+            {!stage && 'Preparing to process your video...'}
+          </p>
+          {processingStatus && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              {processingStatus}
+            </p>
+          )}
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full max-w-md mt-8">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-blue-500 via-green-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out"
+              style={{ 
+                width: stage === 'transcribing' ? '33%' : 
+                       stage === 'translating' ? '66%' : 
+                       stage === 'formatting' ? '100%' : 
+                       stage === 'formatting' ? '100%' : '0%'
+              }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={`flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 md:p-8 gap-8 sm:gap-12 md:gap-16 font-[family-name:var(--font-inter)] ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#f7f9fb] text-[#222]'} text-center relative transition-colors duration-300`}>
       {/* Language Selector and Dark Mode Toggle - Top Right */}
@@ -1042,7 +1255,7 @@ export default function Home() {
           aria-label="Toggle dark mode"
         >
           {isDarkMode ? (
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md-6" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
             </svg>
           ) : (
@@ -1128,76 +1341,92 @@ export default function Home() {
           <div className="flex flex-col items-center w-full h-full">
             {/* Title */}
             <h2 className={`text-xl sm:text-2xl md:text-3xl font-bold pt-6 sm:pt-8 md:pt-10 ${isDarkMode ? 'text-white' : 'text-[#222]'}`}>{t.transcribeVideoFile}</h2>
-            {/* Language Selectors */}
+            {/* Language Selectors - Only output language for user videos, both for YouTube */}
             <div className="flex flex-col sm:flex-row mb-6 sm:mb-8 md:mb-10 w-full items-center gap-3 sm:gap-4">
-              {/* Input Language Selector */}
-              <div className="flex flex-col w-full items-center">
-                <label className="text-xs sm:text-sm font-semibold pt-4 sm:pt-6 md:pt-10 mb-1 relative">{t.inputLanguage}</label>
-                <div className="relative w-full max-w-xs sm:max-w-md" ref={videoInputDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setIsVideoInputDropdownOpen(!isVideoInputDropdownOpen)}
-                    className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
-                  >
-                    <span>{youtubeLanguages.find(lang => lang.code === videoInputLanguage)?.name || 'English'}</span>
-                    <svg className={`w-4 h-4 transition-transform ${isVideoInputDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {isVideoInputDropdownOpen && (
-                    <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
-                      {/* Search Input */}
-                      <div className="sticky top-0 p-2 border-b border-gray-300 dark:border-gray-600 bg-inherit">
-                        <input
-                          type="text"
-                          placeholder="Search languages..."
-                          value={videoInputSearchTerm}
-                          onChange={(e) => setVideoInputSearchTerm(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const filteredLanguages = youtubeLanguages.filter((language) =>
-                                language.name.toLowerCase().includes(videoInputSearchTerm.toLowerCase()) ||
-                                language.code.toLowerCase().includes(videoInputSearchTerm.toLowerCase())
-                              );
-                              if (filteredLanguages.length > 0) {
-                                setVideoInputLanguage(filteredLanguages[0].code);
-                                setIsVideoInputDropdownOpen(false);
-                                setVideoInputSearchTerm("");
+              {/* Input Language Selector - Only for YouTube videos */}
+              {isYouTubeVideo && (
+                <div className="flex flex-col w-full items-center">
+                  <label className="text-xs sm:text-sm font-semibold pt-4 sm:pt-6 md:pt-10 mb-1 relative">{t.inputLanguage}</label>
+                  <div className="relative w-full max-w-xs sm:max-w-md" ref={videoInputDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsVideoInputDropdownOpen(!isVideoInputDropdownOpen)}
+                      className={`w-full rounded-lg p-3 border text-left flex justify-between items-center ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-700'}`}
+                    >
+                      <span>{videoInputLanguage === 'auto' ? `🔍 ${t.autoDetect}` : youtubeLanguages.find(lang => lang.code === videoInputLanguage)?.name || 'English'}</span>
+                      <svg className={`w-4 h-4 transition-transform ${isVideoInputDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {isVideoInputDropdownOpen && (
+                      <div className={`absolute z-10 w-full mt-1 rounded-lg border max-h-48 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} shadow-lg`}>
+                        {/* Search Input */}
+                        <div className="sticky top-0 p-2 border-b border-gray-300 dark:border-gray-600 bg-inherit">
+                          <input
+                            type="text"
+                            placeholder="Search languages..."
+                            value={videoInputSearchTerm}
+                            onChange={(e) => setVideoInputSearchTerm(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const filteredLanguages = youtubeLanguages.filter((language) =>
+                                  language.name.toLowerCase().includes(videoInputSearchTerm.toLowerCase()) ||
+                                  language.code.toLowerCase().includes(videoInputSearchTerm.toLowerCase())
+                                );
+                                if (filteredLanguages.length > 0) {
+                                  setVideoInputLanguage(filteredLanguages[0].code);
+                                  setIsVideoInputDropdownOpen(false);
+                                  setVideoInputSearchTerm("");
+                                }
                               }
-                            }
-                          }}
-                          className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
-                            isDarkMode ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
-                          }`}
-                          autoFocus
-                        />
+                            }}
+                            className={`w-full px-2 py-1 text-sm rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+                              isDarkMode ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-700 placeholder-gray-500'
+                            }`}
+                            autoFocus
+                          />
+                        </div>
+                        {/* Filtered Languages */}
+                        <div className="overflow-y-auto max-h-36">
+                          {/* Auto-detect option */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVideoInputLanguage('auto');
+                              setIsVideoInputDropdownOpen(false);
+                              setVideoInputSearchTerm("");
+                            }}
+                            className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${videoInputLanguage === 'auto' ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
+                          >
+                            🔍 {t.autoDetect}
+                          </button>
+                          {/* Divider */}
+                          <div className={`border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}></div>
+                          {youtubeLanguages
+                            .filter((language) =>
+                              language.name.toLowerCase().includes(videoInputSearchTerm.toLowerCase()) ||
+                              language.code.toLowerCase().includes(videoInputSearchTerm.toLowerCase())
+                            )
+                            .map((language) => (
+                              <button
+                                key={language.code}
+                                type="button"
+                                onClick={() => {
+                                  setVideoInputLanguage(language.code);
+                                  setIsVideoInputDropdownOpen(false);
+                                  setVideoInputSearchTerm("");
+                                }}
+                                className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${videoInputLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
+                              >
+                                {language.name}
+                              </button>
+                            ))}
+                        </div>
                       </div>
-                      {/* Filtered Languages */}
-                      <div className="overflow-y-auto max-h-36">
-                        {youtubeLanguages
-                          .filter((language) =>
-                            language.name.toLowerCase().includes(videoInputSearchTerm.toLowerCase()) ||
-                            language.code.toLowerCase().includes(videoInputSearchTerm.toLowerCase())
-                          )
-                          .map((language) => (
-                            <button
-                              key={language.code}
-                              type="button"
-                              onClick={() => {
-                                setVideoInputLanguage(language.code);
-                                setIsVideoInputDropdownOpen(false);
-                                setVideoInputSearchTerm("");
-                              }}
-                              className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-600' : ''} ${videoInputLanguage === language.code ? (isDarkMode ? 'bg-gray-600' : 'bg-gray-100') : ''}`}
-                            >
-                              {language.name}
-                            </button>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               {/* Output Language Selector */}
               <div className="flex flex-col w-full items-center">
                 <label className="text-xs sm:text-sm font-semibold pt-4 sm:pt-6 md:pt-10 mb-1 relative">{t.outputLanguage}</label>
@@ -1268,6 +1497,8 @@ export default function Home() {
               </div>
             </div>
 
+
+
             {/* File info, buttons, etc. */}
             {selectedFile ? (
               <div className="text-center w-full flex flex-col items-center gap-1 relative">
@@ -1303,15 +1534,15 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col items-center gap-2">
                 <button
-                  onClick={isTranscribingVideo || isProcessing ? handleRemoveFile : (selectedFile ? handleProcess : handleUploadClick)}
+                  onClick={isProcessing ? handleRemoveFile : (selectedFile ? handleProcess : handleUploadClick)}
                   className={`text-white p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
                     selectedFile
                       ? 'bg-[#22c55e] hover:bg-[#16a34a]'
                       : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
-                  } ${(isTranscribingVideo || isProcessing) ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
+                  } ${isProcessing ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
                   disabled={false}
                 >
-                  {(isTranscribingVideo || isProcessing) && (
+                  {isProcessing && (
                     <div className="relative">
                       <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -1321,7 +1552,7 @@ export default function Home() {
                       <div className="absolute inset-0 rounded-full bg-white/20 animate-ping"></div>
                     </div>
                   )}
-                  {(isTranscribingVideo || isProcessing) ? 'Stop' : selectedFile ? t.transcribe : t.upload}
+                  {isProcessing ? 'Stop' : selectedFile ? t.transcribe : t.upload}
                 </button>
                 <div className="w-full flex justify-center">
                   <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.supportedFormats}</p>
@@ -1711,115 +1942,69 @@ export default function Home() {
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'
             } shadow-inner`}>
-              {(isTranscribingVideo || isTranscribingYouTube) ? (
-                /* Transcription Loading Animation */
-                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
-                  {/* Microphone Animation */}
-                  <div className="relative mb-4 sm:mb-6">
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full ${
-                      isDarkMode ? 'bg-gradient-to-br from-blue-600/20 to-purple-600/20' : 'bg-gradient-to-br from-blue-100 to-purple-100'
-                    } border-2 border-blue-500/30 flex items-center justify-center`}>
-                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
-                    </div>
-                    {/* Floating sound waves */}
-                    <div className="absolute -top-1 -left-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-ping"></div>
-                    <div className="absolute -top-1 -right-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-400 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-                    <div className="absolute -bottom-1 -left-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-indigo-400 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>
-                    <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-ping" style={{animationDelay: '1.5s'}}></div>
-                  </div>
-                  
-                  {/* Loading Text */}
-                  <div className="text-center mb-3 sm:mb-4">
-                    <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-blue-600 dark:text-blue-400">AI is Transcribing Audio</h3>
-                    <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {isYouTubeVideo 
-                        ? "Extracting and processing YouTube captions..."
-                        : "Converting speech to text with high accuracy..."
-                      }
-                    </p>
-                  </div>
-                  
-                  {/* Progress Steps */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`}></div>
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse ${isDarkMode ? 'bg-purple-400' : 'bg-purple-500'}`}></div>
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-                  </div>
-                  
-                  {/* Animated Icons */}
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} animate-bounce`}>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
-                    </div>
-                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-purple-600/20' : 'bg-purple-100'} animate-bounce`} style={{animationDelay: '0.2s'}}>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-indigo-600/20' : 'bg-indigo-100'} animate-bounce`} style={{animationDelay: '0.4s'}}>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+              {isProcessing ? (
+                <ProcessingAnimation stage={currentProcessingStage || 'transcribing'} />
               ) : (
-                <ReactMarkdown
-                  components={{
-                    h1: ({children}) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
-                    h2: ({children}) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
-                    h3: ({children}) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
-                    p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-sm sm:text-base">{children}</p>,
-                    strong: ({children}) => <strong className="font-semibold text-blue-600 dark:text-blue-400">{children}</strong>,
-                    em: ({children}) => <em className="italic text-blue-500 dark:text-blue-300">{children}</em>,
-                    ul: ({children}) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ul>,
-                    ol: ({children}) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ol>,
-                    li: ({children}) => <li className="mb-1">{children}</li>,
-                    blockquote: ({children}) => (
-                      <blockquote className={`border-l-3 pl-2 sm:pl-3 py-1.5 sm:py-2 my-2 sm:my-3 italic text-sm sm:text-base ${
-                        isDarkMode 
-                          ? 'border-blue-400 bg-blue-900/10' 
-                          : 'border-blue-400 bg-blue-50/50'
-                      }`}>
-                        {children}
-                      </blockquote>
-                    ),
-                    code: ({children}) => (
-                      <code className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono ${
-                        isDarkMode 
-                          ? 'bg-gray-700 text-blue-300' 
-                          : 'bg-gray-100 text-blue-700'
-                      }`}>
-                        {children}
-                      </code>
-                    ),
-                  }}
-                >
-                  {(() => {
-                    const content = transcriptionOriginal
-                      ? (isFormatted 
+                <>
+                  {isFormatted ? (
+                    <ReactMarkdown
+                      components={{
+                        h1: ({children}) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-blue-600 dark:text-blue-400">{children}</h1>,
+                        h2: ({children}) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-blue-500 dark:text-blue-300">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-2 text-blue-400 dark:text-blue-200">{children}</h3>,
+                        p: ({children}) => <p className="mb-2 sm:mb-3 leading-relaxed text-sm sm:text-base">{children}</p>,
+                        strong: ({children}) => <strong className="font-semibold text-blue-600 dark:text-blue-400">{children}</strong>,
+                        em: ({children}) => <em className="italic text-blue-500 dark:text-blue-300">{children}</em>,
+                        ul: ({children}) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1 ml-3 sm:ml-4 text-sm sm:text-base">{children}</ol>,
+                        li: ({children}) => <li className="mb-1">{children}</li>,
+                        blockquote: ({children}) => (
+                          <blockquote className={`border-l-3 pl-2 sm:pl-3 py-1.5 sm:py-2 my-2 sm:my-3 italic text-sm sm:text-base ${
+                            isDarkMode 
+                              ? 'border-blue-400 bg-blue-900/10' 
+                              : 'border-blue-400 bg-blue-50/50'
+                          }`}>
+                            {children}
+                          </blockquote>
+                        ),
+                        code: ({children}) => (
+                          <code className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs sm:text-sm font-mono ${
+                            isDarkMode 
+                              ? 'bg-gray-700 text-blue-300' 
+                              : 'bg-gray-100 text-blue-700'
+                          }`}>
+                            {children}
+                          </code>
+                        ),
+                      }}
+                    >
+                      {(() => {
+                        const content = transcriptionOriginal
                           ? (allTranslations[resultLang] || transcriptionOriginal)
-                          : (allUnformattedTranslations[resultLang] || transcriptionOriginal)
-                        )
-                      : (isFormatted
-                          ? (demoTranscriptionContent[selectedLanguage] ||
+                          : (demoTranscriptionContent[selectedLanguage] ||
                              demoTranscriptionContent['en'] ||
-                             "# Loading...")
+                             "# Loading...");
+                        console.log('ReactMarkdown content:', content);
+                        console.log('Content type:', typeof content);
+                        console.log('Content length:', content?.length);
+                        console.log('First 200 chars:', content?.substring(0, 200));
+                        return content;
+                      })()}
+                    </ReactMarkdown>
+                  ) : (
+                    // Raw text display with proper paragraph breaks
+                    <div className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
+                      {(() => {
+                        const content = transcriptionRaw
+                          ? (allUnformattedTranslations[resultLang] || transcriptionRaw)
                           : (demoUnformattedContent[selectedLanguage] ||
                              demoUnformattedContent['en'] ||
-                             "# Loading...")
-                        );
-                    console.log('ReactMarkdown content:', content);
-                    console.log('Content type:', typeof content);
-                    console.log('Content length:', content?.length);
-                    console.log('First 200 chars:', content?.substring(0, 200));
-                    return content;
-                  })()}
-                </ReactMarkdown>
+                             "Loading...");
+                        return content;
+                      })()}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             
@@ -1923,62 +2108,8 @@ export default function Home() {
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'
             } shadow-inner`}>
-              {isSummaryLoading ? (
-                /* Inline Loading Animation */
-                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
-                  {/* AI Brain Animation */}
-                  <div className="relative mb-4 sm:mb-6">
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full ${
-                      isDarkMode ? 'bg-gradient-to-br from-green-600/20 to-emerald-600/20' : 'bg-gradient-to-br from-green-100 to-emerald-100'
-                    } border-2 border-green-500/30 flex items-center justify-center`}>
-                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                      </svg>
-                    </div>
-                    {/* Floating neurons */}
-                    <div className="absolute -top-1 -left-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-ping"></div>
-                    <div className="absolute -top-1 -right-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-400 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-                    <div className="absolute -bottom-1 -left-1 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-blue-400 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>
-                    <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-400 rounded-full animate-ping" style={{animationDelay: '1.5s'}}></div>
-                  </div>
-                  
-                  {/* Loading Text */}
-                  <div className="text-center mb-3 sm:mb-4">
-                    <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-green-600 dark:text-green-400">AI is Analyzing Content</h3>
-                    <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {isYouTubeVideo 
-                        ? "Extracting key insights from your YouTube video..."
-                        : "Identifying main topics and generating concise summary..."
-                      }
-                    </p>
-                  </div>
-                  
-                  {/* Progress Steps */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-green-400' : 'bg-green-500'}`}></div>
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse ${isDarkMode ? 'bg-emerald-400' : 'bg-emerald-500'}`}></div>
-                    <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-                  </div>
-                  
-                  {/* Animated Icons */}
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-green-600/20' : 'bg-green-100'} animate-bounce`}>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-emerald-600/20' : 'bg-emerald-100'} animate-bounce`} style={{animationDelay: '0.2s'}}>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <div className={`p-1.5 sm:p-2 rounded-full ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-100'} animate-bounce`} style={{animationDelay: '0.4s'}}>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+              {isProcessing ? (
+                <ProcessingAnimation stage={currentProcessingStage || 'formatting'} />
               ) : (
                 <ReactMarkdown
                   components={{

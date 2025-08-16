@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 export async function transcribeAudio(
-  audioBuffer: Buffer,
+  audioBuffer: Buffer | ArrayBuffer | SharedArrayBuffer,
   mime: string,
   filename?: string,
   language?: string,
@@ -40,11 +40,29 @@ export async function transcribeAudio(
   
   console.log('🔍 Transcribe Debug:', { fileName, mime, language, filename: filename || 'none' });
   
-  const file = new File([audioBuffer], fileName, { type: mime });
+  // Convert Buffer to ArrayBuffer if needed
+  let bufferData: any;
+  if (audioBuffer instanceof Buffer) {
+    // Convert Buffer to ArrayBuffer
+    const arrayBuffer = audioBuffer.buffer;
+    if (arrayBuffer instanceof SharedArrayBuffer) {
+      // Convert SharedArrayBuffer to ArrayBuffer
+      bufferData = arrayBuffer.slice(0);
+    } else {
+      bufferData = arrayBuffer.slice(audioBuffer.byteOffset, audioBuffer.byteOffset + audioBuffer.byteLength);
+    }
+  } else if (audioBuffer instanceof SharedArrayBuffer) {
+    // Convert SharedArrayBuffer to ArrayBuffer
+    bufferData = audioBuffer.slice(0);
+  } else {
+    bufferData = audioBuffer;
+  }
+  const file = new File([bufferData], fileName, { type: mime });
+  
   const res = await openai.audio.transcriptions.create({
     model: 'whisper-1',
     file,
-    language: language ? getWhisperLanguage(language) : undefined,
+    language: language && language !== 'auto' ? getWhisperLanguage(language) : undefined,
     response_format: 'text',
   });
   send?.('partialTranscript', { text: res.slice(0, 1500) });

@@ -23,7 +23,7 @@ Here is the transcript of the video:
 ${transcript}
 """
 
-Please provide a comprehensive summary of the video. Your summary should:
+Please provide a comprehensive summary of the video using **markdown formatting**. Your summary should:
 
 ## Content Requirements:
 - Capture the main points and structure of the video
@@ -34,8 +34,18 @@ Please provide a comprehensive summary of the video. Your summary should:
 - Include a brief overview at the beginning
 - Structure with main sections and subsections as needed
 
+## Markdown Formatting Requirements:
+- Use **## headers** for major sections
+- Use **### subheaders** for subsections
+- Use **bold text** for emphasis on key terms and important concepts
+- Use *italic text* for foreign words or technical terms
+- Use bullet points (• or -) for lists
+- Use numbered lists for step-by-step processes
+- Use > blockquotes for important quotes or highlights
+- Use \`code\` formatting for technical terms, names, or specific data
+
 ## Video Information:
 - Title: "${videoTitle}"
 
-Provide ONLY the summary content in ${language} without any introductory text. Start directly with the summary.`;
+Provide ONLY the summary content in ${language} with proper markdown formatting. Start directly with the summary.`;
 } 

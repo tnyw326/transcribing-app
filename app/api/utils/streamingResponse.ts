@@ -75,7 +75,8 @@ export function streamSSE(callback: (send: (type: string, data?: any) => void) =
   const stream = new ReadableStream({
     async start(controller) {
       const send = (type: string, data?: any) => {
-        const message = `data: ${JSON.stringify({ type, data, timestamp: Date.now() })}\n\n`;
+        // Use standard SSE format: event: type\ndata: JSON\n\n
+        const message = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
         controller.enqueue(encoder.encode(message));
       };
 
