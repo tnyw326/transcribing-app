@@ -40,4 +40,36 @@ export class CacheManager {
 }
 
 // Global cache manager instance
-export const cacheManager = new CacheManager(); 
+export const cacheManager = new CacheManager();
+
+// Simple in-memory cache for process results
+const processCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// Check if cache entry is still valid
+const isCacheValid = (timestamp: number): boolean => {
+  return Date.now() - timestamp < CACHE_TTL;
+};
+
+// Get value from cache
+export async function kvGet(key: string): Promise<any | null> {
+  const cached = processCache.get(key);
+  if (cached && isCacheValid(cached.timestamp)) {
+    console.log(`🎯 Process Cache HIT for key: ${key}`);
+    cacheManager.recordHit();
+    return cached.data;
+  }
+  if (cached) {
+    console.log(`⏰ Process Cache EXPIRED for key: ${key}`);
+    processCache.delete(key);
+  }
+  console.log(`❌ Process Cache MISS for key: ${key}`);
+  cacheManager.recordMiss();
+  return null;
+}
+
+// Set value in cache
+export async function kvSet(key: string, value: any): Promise<void> {
+  processCache.set(key, { data: value, timestamp: Date.now() });
+  console.log(`💾 Cached process result for key: ${key}`);
+} 

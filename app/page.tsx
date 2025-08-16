@@ -168,6 +168,12 @@ export default function Home() {
   const transcribeAbortController = useRef<AbortController | null>(null);
   const summaryAbortController = useRef<AbortController | null>(null);
   const youtubeAbortController = useRef<AbortController | null>(null);
+  const processAbortController = useRef<AbortController | null>(null);
+
+  // Streaming state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [processingProgress, setProcessingProgress] = useState<{[key: string]: any}>({});
 
   // Sync dark mode with HTML class
   useEffect(() => {
@@ -191,10 +197,101 @@ export default function Home() {
       if (youtubeAbortController.current) {
         youtubeAbortController.current.abort();
       }
+      if (processAbortController.current) {
+        processAbortController.current.abort();
+      }
     };
   }, []);
 
 
+
+  // Streaming process function
+  const processFile = async (file: File, inputLanguage: string, outputLanguage: string, translateTo?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('inputLanguage', inputLanguage);
+    form.append('outputLanguage', outputLanguage);
+    if (translateTo) form.append('translateTo', translateTo);
+
+    const res = await fetch('/api/process', { 
+      method: 'POST', 
+      body: form,
+      signal: processAbortController.current?.signal
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Process failed: ${res.statusText}`);
+    }
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        const lines = frame.split('\n');
+        let event = 'message', data = '';
+        for (const l of lines) {
+          if (l.startsWith('event:')) event = l.slice(6).trim();
+          if (l.startsWith('data:')) data += l.slice(5).trim();
+        }
+        if (data) {
+          try {
+            const parsedData = JSON.parse(data);
+            handleEvent(event, parsedData);
+          } catch (e) {
+            console.error('Error parsing SSE data:', e);
+          }
+        }
+      }
+    }
+  };
+
+  const handleEvent = (event: string, data: any) => {
+    console.log('SSE Event:', event, data);
+    
+    switch (event) {
+      case 'status':
+        setProcessingStatus(data.msg || 'Processing...');
+        break;
+      case 'progress':
+        setProcessingProgress(prev => ({ ...prev, ...data }));
+        break;
+      case 'cached':
+        setProcessingStatus('Using cached result...');
+        break;
+      case 'done':
+        // Handle final result
+        if (data.transcript) {
+          setTranscriptionOriginal(data.formattedTranscript || data.transcript);
+        }
+        if (data.summary) {
+          setTranscriptionSummary(data.summary);
+          setAllSummaries(prev => ({ ...prev, [data.language || videoOutputLanguage]: data.summary }));
+        }
+        if (data.translation) {
+          setAllTranslations(prev => ({ ...prev, [data.translateTo]: data.translation }));
+        }
+        setIsProcessing(false);
+        setProcessingStatus('');
+        setProcessingProgress({});
+        break;
+      case 'error':
+        console.error('Processing error:', data);
+        setIsProcessing(false);
+        setProcessingStatus('');
+        setProcessingProgress({});
+        alert(`Processing failed: ${data.message || 'Unknown error'}`);
+        break;
+    }
+  };
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string, type: string) => {
@@ -511,6 +608,10 @@ export default function Home() {
       youtubeAbortController.current.abort();
       youtubeAbortController.current = null;
     }
+    if (processAbortController.current) {
+      processAbortController.current.abort();
+      processAbortController.current = null;
+    }
 
     setSelectedFile(null);
     setTranscriptionOriginal("");
@@ -519,6 +620,7 @@ export default function Home() {
     setIsTranscribingVideo(false);
     setIsTranscribingYouTube(false);
     setIsSummaryLoading(false);
+    setIsProcessing(false);
     setAllTranslations({});
     setAllUnformattedTranslations({});
     setAllSummaries({});
@@ -527,6 +629,8 @@ export default function Home() {
     setIsUserVideo(false);
     setYoutubeVideoId("");
     setResultMode("original");
+    setProcessingStatus('');
+    setProcessingProgress({});
   };
 
   const handleRemoveFile = () => {
@@ -540,15 +644,58 @@ export default function Home() {
     if (isSummaryLoading && summaryAbortController.current) {
       summaryAbortController.current.abort();
     }
+    if (isProcessing && processAbortController.current) {
+      processAbortController.current.abort();
+    }
     
     setIsTranscribingVideo(false);
     setIsTranscribingYouTube(false);
     setIsSummaryLoading(false);
+    setIsProcessing(false);
     
     // Reset to default state
     resetToDefault();
   };
 
+  const handleProcess = async () => {
+    if (!selectedFile) return;
+
+    // If already processing, stop and reset
+    if (isTranscribingVideo || isTranscribingYouTube || isSummaryLoading || isProcessing) {
+      resetToDefault();
+      return;
+    }
+
+    // Create new AbortController for this request
+    processAbortController.current = new AbortController();
+
+    setIsProcessing(true);
+    setTranscriptionOriginal("");
+    setTranscriptionSummary("");
+    setAllTranslations({});
+    setAllUnformattedTranslations({});
+    setAllSummaries({});
+    setProcessingStatus('Starting process...');
+    setProcessingProgress({});
+
+    try {
+      // Use the new streaming process endpoint
+      await processFile(selectedFile, videoInputLanguage, videoOutputLanguage, videoOutputLanguage !== 'en' ? videoOutputLanguage : undefined);
+      
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Process request was cancelled');
+        return;
+      }
+      console.error('Process error:', error);
+      alert('Processing failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+      processAbortController.current = null;
+    }
+  };
+
+  // Keep the old transcribe function for backward compatibility
   const handleTranscribe = async () => {
     if (!selectedFile) return;
 
@@ -1156,15 +1303,15 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col items-center gap-2">
                 <button
-                  onClick={isTranscribingVideo ? handleRemoveFile : (selectedFile ? handleTranscribe : handleUploadClick)}
+                  onClick={isTranscribingVideo || isProcessing ? handleRemoveFile : (selectedFile ? handleProcess : handleUploadClick)}
                   className={`text-white p-2.5 sm:p-3 rounded-full w-[120px] sm:w-[140px] md:w-[150px] cursor-pointer font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
                     selectedFile
                       ? 'bg-[#22c55e] hover:bg-[#16a34a]'
                       : 'bg-[#2563eb] hover:bg-[#1d4ed8]'
-                  } ${isTranscribingVideo ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
+                  } ${(isTranscribingVideo || isProcessing) ? 'animate-pulse scale-105 shadow-lg shadow-green-500/25' : 'hover:scale-105 active:scale-95'} transform`}
                   disabled={false}
                 >
-                  {isTranscribingVideo && (
+                  {(isTranscribingVideo || isProcessing) && (
                     <div className="relative">
                       <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -1174,11 +1321,12 @@ export default function Home() {
                       <div className="absolute inset-0 rounded-full bg-white/20 animate-ping"></div>
                     </div>
                   )}
-                  {isTranscribingVideo ? 'Stop' : selectedFile ? t.transcribe : t.upload}
+                  {(isTranscribingVideo || isProcessing) ? 'Stop' : selectedFile ? t.transcribe : t.upload}
                 </button>
                 <div className="w-full flex justify-center">
                   <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-[#94a3b8]'}`}>{t.supportedFormats}</p>
                 </div>
+
               </div>
             </div>
             <input
@@ -1422,7 +1570,7 @@ export default function Home() {
           <div className="flex items-center gap-1 sm:mr-8">
             {[
               { mode: "original", label: t.original, isFirst: true },
-              { mode: "summary", label: isSummaryLoading ? 'Stop' : t.summary, isFirst: false }
+              { mode: "summary", label: (isSummaryLoading || isProcessing) ? 'Stop' : t.summary, isFirst: false }
             ].map(({ mode, label, isFirst }) => (
               <button
                 key={mode}
@@ -1439,8 +1587,8 @@ export default function Home() {
                   }`
                 }
                 onClick={() => {
-                  // If summary is loading, stop the process
-                  if (mode === "summary" && isSummaryLoading) {
+                  // If summary is loading or processing, stop the process
+                  if (mode === "summary" && (isSummaryLoading || isProcessing)) {
                     resetToDefault();
                     return;
                   }

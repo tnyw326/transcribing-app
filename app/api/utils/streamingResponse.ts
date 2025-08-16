@@ -66,4 +66,35 @@ export function createConsoleStreamingResponse(callback: (stream: StreamingRespo
   });
   
   return streamingResponse;
+}
+
+// Server-Sent Events streaming function
+export function streamSSE(callback: (send: (type: string, data?: any) => void) => Promise<void>) {
+  const encoder = new TextEncoder();
+  
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (type: string, data?: any) => {
+        const message = `data: ${JSON.stringify({ type, data, timestamp: Date.now() })}\n\n`;
+        controller.enqueue(encoder.encode(message));
+      };
+
+      try {
+        await callback(send);
+        controller.close();
+      } catch (error) {
+        console.error('Streaming error:', error);
+        send('error', { message: error instanceof Error ? error.message : 'Unknown error' });
+        controller.close();
+      }
+    }
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 } 
