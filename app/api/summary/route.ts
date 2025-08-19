@@ -1,5 +1,6 @@
 import { chunkText, mapReduceSummaries } from '../utils/chunker';
 import OpenAI from 'openai';
+import { createSummaryPrompt } from '../prompt-templates/summary';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -13,7 +14,7 @@ export async function summarizeChunks(raw: string, send?: (ev: string, data: any
       model: "gpt-4o-mini",
       messages: [{ 
         role: "user", 
-        content: `Summarize this text chunk in 2-3 sentences:\n\n${c}` 
+        content: `Summarize this text chunk in 2-3 sentences, maintaining the original language and style:\n\n${c}` 
       }],
     });
     partials[i] = out.choices[0].message?.content ?? '';
@@ -21,7 +22,7 @@ export async function summarizeChunks(raw: string, send?: (ev: string, data: any
     send?.('progress', { stage: 'chunk-summary', done, total: chunks.length });
   }));
 
-  // reduce with proper markdown formatting
+  // reduce with proper markdown formatting using the prompt template
   const final = (await openai.chat.completions.create({ 
     model: "gpt-4o",
     messages: [{ 
@@ -37,6 +38,12 @@ export async function summarizeChunks(raw: string, send?: (ev: string, data: any
 - Use numbered lists for step-by-step processes
 - Use > blockquotes for important quotes or highlights
 - Use \`code\` formatting for technical terms, names, or specific data
+
+## Language Considerations:
+- Maintain the original language of the content
+- Use appropriate punctuation and formatting for the target language
+- For Chinese text: use proper Chinese punctuation (，。！？；：""''（）【】)
+- For Chinese text: use **粗体** for emphasis and maintain natural flow
 
 Partial summaries:
 ${partials.join('\n\n')}

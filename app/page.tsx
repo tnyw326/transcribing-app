@@ -34,6 +34,9 @@ import ReactMarkdown from 'react-markdown';
       outputLanguage: "Output Language",
       autoDetect: "Auto-detect",
       transcriptionAnimation: "Transcribing...",
+      translatingAnimation: "Translating...",
+      formattingAnimation: "Formatting...",
+      summarizingAnimation: "Generating summary...",
 
       original: "Original",
       summary: "Summary",
@@ -71,6 +74,9 @@ import ReactMarkdown from 'react-markdown';
       outputLanguage: "输出语言",
       autoDetect: "自动检测",
       transcriptionAnimation: "转录中...",
+      translatingAnimation: "翻译中...",
+      formattingAnimation: "格式化中...",
+      summarizingAnimation: "生成总结中...",
       original: "原文",
       summary: "总结",
       copyLabel: "复制",
@@ -108,6 +114,9 @@ import ReactMarkdown from 'react-markdown';
       autoDetect: "自動検出",
 
       transcriptionAnimation: "文字起こし中...",
+      translatingAnimation: "翻訳中...",
+      formattingAnimation: "フォーマット中...",
+      summarizingAnimation: "要約生成中...",
       original: "原文",
       summary: "要約",
       copyLabel: "コピー",
@@ -1073,16 +1082,19 @@ export default function Home() {
     const isSummaryMode = resultMode === 'summary';
     
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-6 sm:p-8">
+      <div className="flex flex-col items-center pt-8 sm:pt-12 pb-6 sm:pb-8">
         {/* Main Title */}
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-8 sm:mb-12">
-          {isSummaryMode ? 'AI is Generating Summary' : 'AI is Processing Your Video'}
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-center mb-4 sm:mb-6">
+          {isSummaryMode 
+            ? (selectedLanguage === 'zh' ? 'AI正在生成总结' : selectedLanguage === 'ja' ? 'AIが要約を生成中' : 'AI is Generating Summary')
+            : (selectedLanguage === 'zh' ? 'AI正在处理您的视频' : selectedLanguage === 'ja' ? 'AIがあなたの動画を処理中' : 'AI is Processing Your Video')
+          }
         </h2>
         
         {/* Show single summary icon or three stage icons based on mode */}
         {isSummaryMode ? (
           // Single Summary Icon
-          <div className="flex flex-col items-center gap-4 mb-8 sm:mb-12">
+          <div className="flex flex-col items-center gap-4 mb-8 sm:mb-12 mt-8 sm:mt-12">
             <div className="relative p-4 sm:p-6 rounded-full bg-orange-100 dark:bg-orange-900/30">
               <svg className="w-8 h-8 sm:w-12 sm:h-12 text-orange-600 dark:text-orange-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -1094,16 +1106,16 @@ export default function Home() {
             </div>
             <div className="text-center">
               <h3 className="font-semibold text-sm sm:text-base text-orange-600 dark:text-orange-400">
-                Summarizing
+                {selectedLanguage === 'zh' ? '总结中' : selectedLanguage === 'ja' ? '要約中' : 'Summarizing'}
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Creating concise summary
+                {selectedLanguage === 'zh' ? '创建简洁摘要' : selectedLanguage === 'ja' ? '簡潔な要約を作成' : 'Creating concise summary'}
               </p>
             </div>
           </div>
         ) : (
           // Three Stage Icons - All Visible Simultaneously
-          <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-12 mb-8 sm:mb-12">
+          <div className="flex flex-col sm:flex-row items-center gap-8 sm:gap-12 mb-8 sm:mb-12 mt-8 sm:mt-12">
           {/* Transcribing Stage */}
           <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${
             stage === 'transcribing' ? 'scale-110 opacity-100' : 'scale-100 opacity-60'
@@ -1129,10 +1141,10 @@ export default function Home() {
               <h3 className={`font-semibold text-sm sm:text-base ${
                 stage === 'transcribing' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'
               }`}>
-                Transcribing
+                {selectedLanguage === 'zh' ? '转录中' : selectedLanguage === 'ja' ? '文字起こし' : 'Transcribing'}
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Converting speech to text
+                {selectedLanguage === 'zh' ? '将语音转换为文字' : selectedLanguage === 'ja' ? '音声をテキストに変換' : 'Converting speech to text'}
               </p>
             </div>
           </div>
@@ -1162,10 +1174,10 @@ export default function Home() {
               <h3 className={`font-semibold text-sm sm:text-base ${
                 stage === 'translating' ? 'text-green-600 dark:text-green-400' : 'text-gray-500'
               }`}>
-                Translating
+                {selectedLanguage === 'zh' ? '翻译中' : selectedLanguage === 'ja' ? '翻訳中' : 'Translating'}
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Converting between languages
+                {selectedLanguage === 'zh' ? '在语言间转换' : selectedLanguage === 'ja' ? '言語間で変換' : 'Converting between languages'}
               </p>
             </div>
           </div>
@@ -1195,10 +1207,10 @@ export default function Home() {
               <h3 className={`font-semibold text-sm sm:text-base ${
                 stage === 'formatting' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-500'
               }`}>
-                Formatting
+                {selectedLanguage === 'zh' ? '格式化' : selectedLanguage === 'ja' ? 'フォーマット' : 'Formatting'}
               </h3>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Structuring content
+                {selectedLanguage === 'zh' ? '构建内容结构' : selectedLanguage === 'ja' ? 'コンテンツを構造化' : 'Structuring content'}
               </p>
             </div>
           </div>
@@ -1209,11 +1221,11 @@ export default function Home() {
 
         {/* Status Message */}
         <div className="text-center">
-          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 font-medium">
+          <p className="text-lg sm:text-lg text-gray-600 dark:text-gray-300 font-medium">
             {stage === 'transcribing' && t.transcriptionAnimation}
-            {stage === 'translating' && t.transcriptionAnimation}
-            {stage === 'formatting' && (resultMode === 'summary' ? 'Generating summary...' : t.transcriptionAnimation)}
-            {!stage && 'Preparing to process your video...'}
+            {stage === 'translating' && t.translatingAnimation}
+            {stage === 'formatting' && (resultMode === 'summary' ? t.summarizingAnimation : t.formattingAnimation)}
+            {!stage && (selectedLanguage === 'zh' ? '准备处理您的视频...' : selectedLanguage === 'ja' ? 'あなたの動画を処理する準備中...' : 'Preparing to process your video...')}
           </p>
           {processingStatus && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -1937,7 +1949,7 @@ export default function Home() {
             </div>
             
             {/* Content with enhanced styling */}
-            <div className={`markdown-body text-left p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl ${
+            <div className={`markdown-body text-left pt-1 sm:pt-2 md:pt-3 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6 rounded-xl sm:rounded-2xl ${
               isDarkMode 
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'
@@ -2103,7 +2115,7 @@ export default function Home() {
             </div>
             
             {/* Content with enhanced styling */}
-            <div className={`markdown-body text-left p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl ${
+            <div className={`markdown-body text-left pt-1 sm:pt-2 md:pt-3 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6 rounded-xl sm:rounded-2xl ${
               isDarkMode 
                 ? 'bg-gray-800/50 border border-gray-700/50' 
                 : 'bg-gray-50/50 border border-gray-200/50'

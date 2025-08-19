@@ -12,7 +12,20 @@ export function createTranscriptionFormattingPrompt({
                       language === 'zh' ? 'Chinese' : 
                       'the same language as the transcript';
 
-  return `You are a transcription editor. Format the following raw transcription text to improve readability by adding proper paragraph breaks.
+  const chineseSpecificGuidelines = language === 'zh' ? `
+## Chinese-Specific Formatting Guidelines:
+- Use **粗体** (bold) for emphasis on key terms, names, and important concepts
+- Use *斜体* (italic) for foreign words, technical terms, or book/movie titles
+- Use bullet points (• 或 -) for lists mentioned in the content
+- Use numbered lists (1. 2. 3.) for step-by-step processes
+- Use > 引用格式 for direct quotes, important statements, or call-to-actions
+- Use \`代码格式\` for technical terms, names, numbers, or specific data
+- Add speaker labels if multiple speakers are detected (e.g., "**说话者1:**", "**说话者2:**")
+- Use proper Chinese punctuation (，。！？；：""''（）【】)
+- Maintain natural Chinese paragraph flow and rhythm
+- Use appropriate spacing between Chinese characters and punctuation` : '';
+
+  return `You are a transcription editor specializing in ${languageName} text formatting. Format the following raw transcription text to improve readability by adding proper paragraph breaks and markdown formatting.
 
 Raw transcription:
 """
@@ -42,11 +55,19 @@ ${text}
 - When transitioning to a new topic or subject
 - When there's a natural break in the conversation flow
 - When the speaker takes a breath or changes tone
+- For Chinese: consider natural speech rhythm and topic transitions
 
-## Language:
+## Language-Specific Considerations:
 - Write in ${languageName}
 - Maintain the original language's writing conventions and style
 - Use appropriate punctuation for the target language
+${chineseSpecificGuidelines}
 
-Provide ONLY the formatted transcription content with proper paragraph breaks and markdown formatting. Do not add any introductory text.`;
+## Output Format:
+- Start directly with the formatted content
+- Use proper markdown syntax
+- Ensure clean, readable formatting
+- Maintain professional appearance
+
+Provide ONLY the formatted transcription content with proper paragraph breaks and markdown formatting. Do not add any introductory text or explanations.`;
 } 

@@ -16,7 +16,21 @@ export function createSummaryPrompt({
   // Determine language
   const language = getLanguageName(resultLang);
 
-  return `You are a helpful assistant that summarizes videos based on their transcript.
+  const chineseSpecificGuidelines = resultLang === 'zh' ? `
+## Chinese-Specific Formatting Guidelines:
+- Use **## 主要章节** (## main sections) for major sections
+- Use **### 子章节** (### subsections) for subsections
+- Use **粗体** (bold) for emphasis on key terms and important concepts
+- Use *斜体* (italic) for foreign words or technical terms
+- Use bullet points (• 或 -) for lists
+- Use numbered lists (1. 2. 3.) for step-by-step processes
+- Use > 引用格式 for important quotes or highlights
+- Use \`代码格式\` for technical terms, names, or specific data
+- Use proper Chinese punctuation (，。！？；：""''（）【】)
+- Maintain natural Chinese paragraph flow and rhythm
+- For technical terms, prefer Chinese equivalents when available` : '';
+
+  return `You are a helpful assistant that summarizes videos based on their transcript. You specialize in creating well-formatted summaries in ${language}.
 
 Here is the transcript of the video:
 """
@@ -43,9 +57,16 @@ Please provide a comprehensive summary of the video using **markdown formatting*
 - Use numbered lists for step-by-step processes
 - Use > blockquotes for important quotes or highlights
 - Use \`code\` formatting for technical terms, names, or specific data
+${chineseSpecificGuidelines}
 
 ## Video Information:
 - Title: "${videoTitle}"
+
+## Output Format:
+- Start directly with the summary content
+- Use proper markdown syntax
+- Ensure clean, readable formatting
+- Maintain professional appearance
 
 Provide ONLY the summary content in ${language} with proper markdown formatting. Start directly with the summary.`;
 } 
