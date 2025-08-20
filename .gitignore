@@ -43,7 +43,6 @@ next-env.d.ts
 # logs
 /logs
 *.log
-
 # video and audio files
 *.mp4
 *.mov
