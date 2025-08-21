@@ -1,30 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
+// app/api/youtube-captions/route.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  try {
   const { searchParams } = new URL(req.url);
-  const url = searchParams.get('url');
-  const text = searchParams.get('text');
-  const lang = searchParams.get('lang');
-  
+  const url = searchParams.get("url") || "";
+  const lang = searchParams.get("lang") || "en";
+  const asText = searchParams.get("text") === "true";
+  const signal = req.signal;
+
   if (!url) {
-    return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    return new NextResponse("Missing url", { status: 400 });
   }
 
-  const params = new URLSearchParams();
-  params.set('url', url!);
-  params.set('text', text ?? 'false');
-  params.set('lang', lang ?? 'en');
+  try {
+    // Replace with your actual captions source
+    const r = await fetch(
+      `https://your-caption-service.example/captions?url=${encodeURIComponent(url)}&lang=${encodeURIComponent(lang)}&text=${asText}`,
+      { signal }
+    );
 
-  const res = await fetch(
-    `https://api.supadata.ai/v1/youtube/transcript?${params}`,
-    { headers: { 'x-api-key': process.env.SUPADATA_API_KEY! } }
-  );
+    if (!r.ok) {
+      return new NextResponse("Failed to fetch captions", { status: 500 });
+    }
 
-    const data = await res.json();
+    const data = await r.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error fetching YouTube transcript:', error);
-    return NextResponse.json({ error: 'Failed to fetch YouTube transcript' }, { status: 500 });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return new NextResponse("Client Closed Request", { status: 499 });
+    }
+    console.error("YouTube captions route error:", err);
+    return new NextResponse("Failed to fetch captions", { status: 500 });
   }
 }

@@ -115,6 +115,8 @@ export default function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [videoAbort, setVideoAbort] = useState<AbortController | null>(null);
+  const [youtubeAbort, setYoutubeAbort] = useState<AbortController | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -330,6 +332,11 @@ export default function Home() {
   };
 
   const handleTranscribe = async () => {
+    if (isTranscribingVideo) {
+      videoAbort?.abort();
+      return;
+    }
+
     if (!selectedFile) return;
 
     setIsTranscribingVideo(true);
@@ -337,6 +344,9 @@ export default function Home() {
     setTranscriptionSummary("");
     setAllTranslations({});
     setAllSummaries({});
+
+    const controller = new AbortController();
+    setVideoAbort(controller);
 
     try {
       const formData = new FormData();
@@ -347,9 +357,13 @@ export default function Home() {
       const response = await fetch("/api/transcribe", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
 
       if (!response.ok) {
+        if (response.status === 499) {
+          throw new DOMException("Request aborted", "AbortError");
+        } 
         throw new Error("Transcription failed");
       }
 
@@ -358,44 +372,62 @@ export default function Home() {
       setTranscriptionSummary(data.summary);
       setAllTranslations(data.translations || {});
       setAllSummaries(data.summaries || {});
-    } catch (error) {
-      console.error("Transcription error:", error);
-      alert("Transcription failed. Please try again.");
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        console.log("Transcription was cancelled");
+      } else {
+        console.error("Transcription error:", error);
+        alert("Transcription failed. Please try again.");
+      }
     } finally {
       setIsTranscribingVideo(false);
+      setVideoAbort(null);
     }
   };
 
   const handleTranscribeYouTube = async () => {
+    if (isTranscribingYouTube) {
+      youtubeAbort?.abort();
+      return;
+    }
+  
     const url = urlInputRef.current?.value;
     if (!url) {
       setYoutubeError("No link is provided");
       return;
     }
-
+  
     const YOUTUBE_VIDEO_REGEX =
       /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-
+  
     if (!YOUTUBE_VIDEO_REGEX.test(url)) {
       setYoutubeError("Please provide a valid YouTube video link");
       return;
     }
-
+  
     setIsFileSelected(false);
     setSelectedFile(null);
     setYoutubeError("");
     setIsTranscribingYouTube(true);
-    // setIsFileSelected(false);
-    // setSelectedFile(null);
-
+  
+    const controller = new AbortController();
+    setYoutubeAbort(controller);
+  
     try {
       const response = await fetch(
-        `/api/youtube-captions?url=${url}&text=true&lang=${youtubeLanguage}`
+        `/api/youtube-captions?url=${encodeURIComponent(url)}&text=true&lang=${youtubeLanguage}`,
+        { signal: controller.signal }
       );
+  
+      if (!response.ok) {
+        if (response.status === 499) throw new DOMException("Aborted","AbortError");
+        throw new Error("Failed to fetch captions");
+      }
+  
       const data = await response.json();
-      const captions = data.content || data.details || data.message;
+      const captions = data.content || data.details || data.message || "";
       const paragraph = captions.replace(/\n+/g, " ");
-
+  
       setTranscriptionOriginal(paragraph);
       setAllTranslations({
         en: paragraph,
@@ -410,13 +442,19 @@ export default function Home() {
         zh: "此功能目前不适用于 YouTube 视频。",
         ja: "この機能は現在 YouTube 動画ではご利用いただけません。",
       });
-    } catch (error) {
-      console.error("YouTube transcription error:", error);
-      setYoutubeError("Failed to transcribe video. Please try again.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        console.log("YouTube transcription canceled.");
+      } else {
+        console.error("YouTube transcription error:", err);
+        setYoutubeError("Failed to transcribe video. Please try again.");
+      }
     } finally {
       setIsTranscribingYouTube(false);
+      setYoutubeAbort(null);
     }
   };
+  
 
   return (
     <div
@@ -615,38 +653,15 @@ export default function Home() {
             <div className="flex-1"></div>
             <button
               onClick={selectedFile ? handleTranscribe : handleUploadClick}
-              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${selectedFile
+              className={`text-white p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${
+                isTranscribingVideo
+                  ? "bg-red-500 hover:bg-red-600"
+                  : selectedFile
                   ? "bg-[#22c55e] hover:bg-[#16a34a]"
                   : "bg-[#2563eb] hover:bg-[#1d4ed8]"
-                } ${isTranscribingVideo ? "animate-pulse" : ""}`}
-              disabled={isTranscribingVideo}
+              } ${isTranscribingVideo ? "animate-pulse" : ""}`}
             >
-              {isTranscribingVideo && (
-                <svg
-                  className="animate-spin h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              )}
-              {isTranscribingVideo
-                ? t.transcribing
-                : selectedFile
-                  ? t.transcribe
-                  : t.upload}
+              {isTranscribingVideo ? "Stop" : selectedFile ? t.transcribe : t.upload}
             </button>
             <input
               ref={fileInputRef}
@@ -834,33 +849,14 @@ export default function Home() {
           {/* Spacer to push button to bottom 20% */}
           <div className="flex-1"></div>
           <button
-            className={`text-white bg-[#22c55e] hover:bg-[#16a34a] p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${isTranscribingYouTube ? "animate-pulse" : ""
-              }`}
+            className={`text-white ${
+              isTranscribingYouTube ? "bg-red-500 hover:bg-red-600" : "bg-[#22c55e] hover:bg-[#16a34a]"
+            } p-3 rounded-full w-[150px] cursor-pointer font-extrabold transition-colors flex items-center justify-center gap-2 ${
+              isTranscribingYouTube ? "animate-pulse" : ""
+            }`}
             onClick={handleTranscribeYouTube}
-            disabled={isTranscribingYouTube}
           >
-            {isTranscribingYouTube && (
-              <svg
-                className="animate-spin h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            )}
-            {isTranscribingYouTube ? t.transcribing : t.transcribe}
+            {isTranscribingYouTube ? "Stop" : t.transcribe}
           </button>
           <div className="w-full flex justify-center">
             <p
